@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "files": [
+    "dist",
+    "config.schema.json"
+  ],
   "scripts": {
     "dev": "node --watch src/main.ts",
     "start": "node dist/main.js",

@@ -4,11 +4,22 @@ import { resolve } from 'node:path';
 
 // Refuse to overwrite an existing directory, including its credentials.
 const directory = resolve('.local');
+const docker = process.argv.includes('--docker');
+const prefix = process.env.JSMINER_IMAGE_PREFIX ?? 'ghcr.io/joshuamart/jsminer';
+const tag = process.env.JSMINER_IMAGE_TAG ?? 'latest';
 try {
   mkdirSync(directory, { mode: 0o700 });
   const token = randomBytes(32).toString('base64url');
   const config = {
     database: 'metadata.db',
+    ...(docker
+      ? {
+          host: '0.0.0.0',
+          worker_image: process.env.JSMINER_WORKER_IMAGE ?? `${prefix}-jsluice:${tag}`,
+          offline_worker_image:
+            process.env.JSMINER_OFFLINE_WORKER_IMAGE ?? `${prefix}-offline:${tag}`,
+        }
+      : {}),
     tokens: [
       {
         sha256: createHash('sha256').update(token).digest('hex'),

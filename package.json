@@ -23,6 +23,7 @@
     "format": "biome format --write .",
     "worker:build": "docker build -t jsminer-jsluice:phase2 workers/jsluice && docker build -t jsminer-offline:phase3 workers/node",
     "test:workers": "node --test apps/api/integration/*.test.mjs",
+    "test:image": "node scripts/test-docker-image.mjs",
     "qualify:build": "node qualification/build.mjs",
     "qualify": "node qualification/run.mjs",
     "qualify:clean": "node qualification/clean-install.mjs",

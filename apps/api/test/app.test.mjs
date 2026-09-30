@@ -303,6 +303,32 @@ test('local setup creates private usable credentials and refuses to overwrite th
   }
 });
 
+test('Docker setup binds all interfaces and selects matching registry image tags', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'jsminer-docker-config-'));
+  const script = fileURLToPath(new URL('../../../scripts/init-local-config.mjs', import.meta.url));
+  const env = {
+    ...process.env,
+    JSMINER_IMAGE_PREFIX: 'ghcr.io/example/jsminer',
+    JSMINER_IMAGE_TAG: 'v0.1.0',
+  };
+  delete env.JSMINER_WORKER_IMAGE;
+  delete env.JSMINER_OFFLINE_WORKER_IMAGE;
+  try {
+    await promisify(execFile)(process.execPath, [script, '--docker'], {
+      cwd: directory,
+      env,
+    });
+    const config = loadConfig(join(directory, '.local/config.json'));
+    assert.equal(config.host, '0.0.0.0');
+    assert.equal(config.port, 3000);
+    assert.equal(config.worker_image, 'ghcr.io/example/jsminer-jsluice:v0.1.0');
+    assert.equal(config.offline_worker_image, 'ghcr.io/example/jsminer-offline:v0.1.0');
+    assert.equal((await stat(join(directory, '.local/token'))).mode & 0o777, 0o600);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('startup fails without printing invalid configuration contents', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'jsminer-startup-'));
   try {
