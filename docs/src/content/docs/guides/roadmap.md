@@ -96,27 +96,27 @@ Les jalons J1 à J5 sont ordonnés : le jalon précédent est requis pour valide
 
 ### 4.1. Acquérir une ressource autorisée
 
-- [ ] Implémenter le mode `url` dans le composant de capture distinct des workers.
-- [ ] Appliquer la politique de destination, le refus des redirections et les limites pendant lecture/décompression.
-- [ ] Rejeter les réponses vides, manifestement HTML/XML ou non UTF-8 et publier des erreurs stables.
-- [ ] Comparer le hash annoncé aux octets réellement reçus avant toute réutilisation du cache.
+- [x] Implémenter le mode `url` dans le composant de capture distinct des workers.
+- [x] Appliquer la politique de destination, le refus des redirections et les limites pendant lecture/décompression.
+- [x] Rejeter les réponses vides, manifestement HTML/XML ou non UTF-8 et publier des erreurs stables.
+- [x] Comparer le hash annoncé aux octets réellement reçus avant toute réutilisation du cache.
 
 ### 4.2. Réutiliser et conserver les résultats
 
-- [ ] Construire les clés de cache versionnées par étape, options, règles, limites et entrée effective.
-- [ ] Distinguer le cache statique de la vue dépendant de `base_url`, des domaines et du projet.
-- [ ] Réutiliser les étapes réussies et retenter les étapes échouées ou incomplètes.
-- [ ] Protéger les publications concurrentes et vérifier l’intégrité des artefacts réutilisés.
-- [ ] Appliquer les quotas globaux, la réservation de capacité, la rétention et les tombstones.
+- [x] Construire les clés de cache versionnées par étape, options, règles, limites et entrée effective.
+- [x] Distinguer le cache statique de la vue dépendant de `base_url`, des domaines et du projet.
+- [x] Réutiliser les étapes réussies et retenter les étapes échouées ou incomplètes.
+- [x] Protéger les publications concurrentes et vérifier l’intégrité des artefacts réutilisés.
+- [x] Appliquer les quotas globaux, la réservation de capacité, la rétention et les tombstones.
 
 ### Jalon J4 — Acquisition et cache validés
 
-- [ ] Le serveur HTTP de fixture confirme les limites, les erreurs d’acquisition et le refus des redirections.
-- [ ] Les mêmes octets à deux URL réutilisent les étapes compatibles ; un contenu ou une version/options modifiés les invalident.
-- [ ] Une nouvelle `base_url` recalcule les URL résolues sans reprendre une vue finale incorrecte.
-- [ ] Wakaru après webcrack et Wakaru après repli utilisent des identités de traitement distinctes.
-- [ ] Les artefacts des handles actifs résistent à l’éviction du cache ; expiration et saturation de quota sont prévisibles.
-- [ ] **J4 validé** — renseigner le commit ou rapport de validation.
+- [x] Le serveur HTTP de fixture confirme les limites, les erreurs d’acquisition et le refus des redirections.
+- [x] Les mêmes octets à deux URL réutilisent les étapes compatibles ; un contenu ou une version/options modifiés les invalident.
+- [x] Une nouvelle `base_url` recalcule les URL résolues sans reprendre une vue finale incorrecte.
+- [x] Wakaru après webcrack et Wakaru après repli utilisent des identités de traitement distinctes.
+- [x] Les artefacts des handles actifs résistent à l’éviction du cache ; expiration et saturation de quota sont prévisibles.
+- [x] **J4 validé** — [rapport du 30 septembre 2026](/reference/phase-4-validation/).
 
 ## 5. Qualifier la v0.1
 

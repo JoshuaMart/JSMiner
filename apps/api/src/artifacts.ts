@@ -89,13 +89,19 @@ export class ArtifactStore {
         writeFileSync(keyFile, randomBytes(32), { mode: 0o600, flag: 'wx' });
       this.key = this.readPrivate(keyFile, 32);
       if (this.key.length !== 32) throw new Error('Invalid artifact key.');
-      for (const directory of ['staging', 'objects']) {
+      for (const directory of ['staging', 'objects', 'cache']) {
         const path = join(this.root, directory);
         if (!existsSync(path)) mkdirSync(path, { mode: 0o700 });
         if (!lstatSync(path).isDirectory() || lstatSync(path).isSymbolicLink())
           throw new Error('Invalid artifact layout.');
       }
-      this.db.exec(`CREATE TABLE IF NOT EXISTS analyses (
+      this.db.exec(`CREATE TABLE IF NOT EXISTS step_cache (
+        key TEXT PRIMARY KEY, hash TEXT NOT NULL, bytes INTEGER NOT NULL, size INTEGER NOT NULL,
+        version TEXT NOT NULL, expires INTEGER NOT NULL, created INTEGER NOT NULL
+      ) STRICT;
+      CREATE INDEX IF NOT EXISTS cache_expiry ON step_cache(expires);
+      INSERT OR IGNORE INTO schema_migrations VALUES (3,strftime('%Y-%m-%dT%H:%M:%fZ','now'));
+      CREATE TABLE IF NOT EXISTS analyses (
         handle TEXT PRIMARY KEY, project TEXT NOT NULL, expires INTEGER NOT NULL,
         bytes INTEGER NOT NULL, manifest TEXT NOT NULL, expired INTEGER NOT NULL DEFAULT 0
       ) STRICT;
@@ -107,6 +113,10 @@ export class ArtifactStore {
       for (const entry of readdirSync(join(this.root, 'objects'))) {
         if (!this.db.prepare('SELECT 1 FROM analyses WHERE handle=?').get(entry))
           rmSync(join(this.root, 'objects', entry), { recursive: true, force: true });
+      }
+      for (const entry of readdirSync(join(this.root, 'cache'))) {
+        if (!this.db.prepare('SELECT 1 FROM step_cache WHERE key=?').get(entry))
+          rmSync(join(this.root, 'cache', entry), { recursive: true, force: true });
       }
       this.purge();
     } catch (error) {
@@ -139,7 +149,94 @@ export class ArtifactStore {
       .update(JSON.stringify([project, value]))
       .digest('hex');
   }
+  private handleBytes() {
+    return Number(
+      this.db.prepare('SELECT coalesce(sum(bytes),0) AS n FROM analyses').get()?.n ?? 0,
+    );
+  }
+  private cacheBytes() {
+    return Number(
+      this.db.prepare('SELECT coalesce(sum(bytes),0) AS n FROM step_cache').get()?.n ?? 0,
+    );
+  }
+  private evict(key: string) {
+    this.removeDirectory(join(this.root, 'cache', key));
+    this.db.prepare('DELETE FROM step_cache WHERE key=?').run(key);
+  }
+  private trimCache(limit: number) {
+    let used = this.cacheBytes();
+    if (used <= Math.max(0, limit)) return;
+    for (const row of this.db
+      .prepare('SELECT key,bytes FROM step_cache ORDER BY created,key')
+      .all() as { key: string; bytes: number }[]) {
+      if (used <= Math.max(0, limit)) break;
+      this.evict(row.key);
+      used -= row.bytes;
+    }
+  }
+  cached(key: string): { output: Buffer; version: string } | null {
+    if (!this.config.cache.enabled) return null;
+    const row = this.db.prepare('SELECT * FROM step_cache WHERE key=?').get(key) as
+      | { hash: string; size: number; version: string; expires: number }
+      | undefined;
+    if (!row) return null;
+    if (row.expires <= this.now()) {
+      this.evict(key);
+      return null;
+    }
+    try {
+      const output = this.readPrivate(join(this.root, 'cache', key), 96 * 1024 * 1024);
+      if (output.length !== row.size || sha256(output) !== row.hash)
+        throw new Error('Invalid cached output.');
+      return { output, version: row.version };
+    } catch {
+      this.evict(key);
+      return null;
+    }
+  }
+  cacheStep(key: string, output: Buffer, version: string, pending: Pending) {
+    if (
+      !this.config.cache.enabled ||
+      this.db.prepare('SELECT 1 FROM step_cache WHERE key=?').get(key)
+    )
+      return;
+    const bytes = output.length + 8192;
+    // The active handle owns this reservation until publication. Cache never borrows it.
+    const limit = Math.min(
+      this.config.cache.max_bytes,
+      this.config.budgets.storage_bytes - this.handleBytes() - pending.capacity - 8192,
+    );
+    if (bytes > limit) return;
+    this.trimCache(limit - bytes);
+    const staging = join(this.root, 'cache', `tmp-${randomUUID()}`);
+    const destination = join(this.root, 'cache', key);
+    try {
+      writeFileSync(staging, output, { mode: 0o600, flag: 'wx' });
+      renameSync(staging, destination);
+      this.db
+        .prepare(
+          'INSERT INTO step_cache(key,hash,bytes,size,version,expires,created) VALUES (?,?,?,?,?,?,?)',
+        )
+        .run(
+          key,
+          sha256(output),
+          bytes,
+          output.length,
+          version,
+          this.now() + this.config.cache.retention_ms,
+          this.now(),
+        );
+    } catch {
+      this.removeDirectory(staging);
+      this.removeDirectory(destination);
+      // Cache is optional: publication of the analysis can still succeed.
+    }
+  }
   purge() {
+    for (const row of this.db
+      .prepare('SELECT key FROM step_cache WHERE expires<=?')
+      .all(this.now()) as { key: string }[])
+      this.evict(row.key);
     for (const row of this.db
       .prepare('SELECT handle FROM analyses WHERE expires<=? AND expired=0')
       .all(this.now()) as { handle: string }[]) {
@@ -149,18 +246,29 @@ export class ArtifactStore {
         .run('[]', row.handle);
     }
     this.db.prepare('DELETE FROM analyses WHERE expired=1 AND expires<=?').run(this.now() - DAY);
+    this.trimCache(
+      this.config.cache.enabled
+        ? Math.min(
+            this.config.cache.max_bytes,
+            this.config.budgets.storage_bytes - this.handleBytes(),
+          )
+        : 0,
+    );
   }
   prepare(project: string, bytes: Buffer): Pending {
     this.purge();
     if (bytes.length > this.config.budgets.artifact_bytes)
       throw new ServiceError(413, 'artifact_too_large');
-    const used = Number(
-      this.db.prepare('SELECT coalesce(sum(bytes),0) AS used FROM analyses').get()?.used ?? 0,
-    );
+    const used = this.handleBytes();
     // Include the original manifest as well as the index/storage overhead.
     const reserved = bytes.length + this.config.budgets.response_bytes + 8192 + 1024;
     if (used + reserved > this.config.budgets.storage_bytes)
       throw new ServiceError(429, 'storage_full');
+    const capacity = Math.min(
+      this.config.budgets.artifact_bytes,
+      this.config.budgets.storage_bytes - used - 8192,
+    );
+    this.trimCache(this.config.budgets.storage_bytes - used - capacity - 8192);
     const handle = `ana_${randomUUID()}`;
     const directory = join(this.root, 'staging', handle);
     try {
@@ -187,10 +295,7 @@ export class ArtifactStore {
       module,
       project,
       sources: [{ module, bytes }],
-      capacity: Math.min(
-        this.config.budgets.artifact_bytes,
-        this.config.budgets.storage_bytes - used - 8192,
-      ),
+      capacity,
     };
   }
   add(
@@ -263,9 +368,8 @@ export class ArtifactStore {
       Buffer.byteLength(serialized) +
       Buffer.byteLength(JSON.stringify(manifest)) +
       8192;
-    const used = Number(
-      this.db.prepare('SELECT coalesce(sum(bytes),0) AS used FROM analyses').get()?.used ?? 0,
-    );
+    const used = this.handleBytes();
+    this.trimCache(this.config.budgets.storage_bytes - used - total);
     if (used + total > this.config.budgets.storage_bytes)
       throw new ServiceError(429, 'storage_full');
     const destination = join(this.root, 'objects', pending.handle);

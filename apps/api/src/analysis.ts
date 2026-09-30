@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 import type { DatabaseSync } from 'node:sqlite';
 import {
@@ -16,6 +17,7 @@ import {
   validateContract,
 } from '@jsminer/contracts';
 import { ArtifactStore, type Pending, sha256 } from './artifacts.ts';
+import { capture, validateScript } from './capture.ts';
 import type { ServiceConfig } from './config.ts';
 import { ServiceError } from './errors.ts';
 import { type Category, finalize, merge } from './merge.ts';
@@ -81,7 +83,7 @@ export class AnalysisEngine {
           this.blocked = true;
         }
       },
-      Math.min(config.budgets.retention_ms, 60000),
+      Math.min(config.budgets.retention_ms, config.cache.retention_ms, 60000),
     );
     this.purgeTimer.unref();
   }
@@ -103,18 +105,12 @@ export class AnalysisEngine {
   analyze(project: string, request: AnalyzeRequest, signal: AbortSignal): Promise<AnalyzeResponse> {
     if (!this.healthy) throw new ServiceError(503, 'service_unavailable');
     if (this.active) throw new ServiceError(429, 'analysis_capacity');
-    if (request.content === undefined) throw new ServiceError(501, 'url_not_implemented');
-    if (!request.content.trim() || /^\s*</u.test(request.content))
-      throw new ServiceError(422, 'invalid_content');
-    const bytes = Buffer.from(request.content);
-    if (request.script_hash && request.script_hash !== sha256(bytes))
-      throw new ServiceError(409, 'script_hash_mismatch');
     this.controller = new AbortController();
     const controller = this.controller;
     const abort = () => controller.abort();
     signal.addEventListener('abort', abort, { once: true });
     if (signal.aborted) abort();
-    this.active = this.execute(project, request, bytes, controller.signal).finally(() => {
+    this.active = this.execute(project, request, controller.signal).finally(() => {
       signal.removeEventListener('abort', abort);
       this.controller = undefined;
       this.active = undefined;
@@ -124,7 +120,6 @@ export class AnalysisEngine {
   private async execute(
     project: string,
     request: AnalyzeRequest,
-    bytes: Buffer,
     signal: AbortSignal,
   ): Promise<AnalyzeResponse> {
     let pending: Pending | undefined;
@@ -132,6 +127,19 @@ export class AnalysisEngine {
     const deadline = performance.now() + budget.analysis_ms;
     const names = selectedTools(request);
     try {
+      const bytes =
+        request.content !== undefined
+          ? Buffer.from(request.content)
+          : await capture(
+              request.url ?? '',
+              this.config,
+              signal,
+              Math.min(budget.capture_ms, deadline - performance.now()),
+            );
+      if (bytes.length > budget.script_bytes) throw new ServiceError(413, 'script_too_large');
+      validateScript(bytes);
+      if (request.script_hash && request.script_hash !== sha256(bytes))
+        throw new ServiceError(409, 'script_hash_mismatch');
       const docker = names.map((name) => this.workers[name]).find((w) => w instanceof DockerWorker);
       if (docker instanceof DockerWorker && !this.recovered) {
         await docker.recover(budget.cleanup_ms);
@@ -191,7 +199,15 @@ export class AnalysisEngine {
       const reasons = (values: AnalyzeResponse['truncation']['reasons']) => {
         response.truncation.reasons = [...new Set([...response.truncation.reasons, ...values])];
       };
-      const run = async (tool: ToolRun, content: Buffer, end: number): Promise<WorkerResult> => {
+      type StepResult = WorkerResult & { cacheKey?: string; cacheHit?: boolean };
+      const pinned = new Map<ToolName, { identity: string; worker: Worker } | null>();
+      const lineage = new Map<string, string>([['original/bundle.js', 'original']]);
+      const run = async (
+        tool: ToolRun,
+        content: Buffer,
+        end: number,
+        path: string,
+      ): Promise<StepResult> => {
         if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
         const timeout = Math.min(end, deadline) - performance.now();
         if (timeout <= 0)
@@ -202,7 +218,7 @@ export class AnalysisEngine {
             errorCode: deadline <= performance.now() ? 'global_deadline' : 'tool_deadline',
             output: Buffer.alloc(0),
           };
-        const worker = this.workers[tool.name];
+        let worker = this.workers[tool.name];
         if (!worker)
           return {
             status: 'skipped',
@@ -213,16 +229,68 @@ export class AnalysisEngine {
           };
         const started = performance.now();
         try {
-          return await worker.run({
+          if (!pinned.has(tool.name))
+            pinned.set(
+              tool.name,
+              this.config.cache.enabled && worker.pin ? await worker.pin(timeout, signal) : null,
+            );
+          const runtime = pinned.get(tool.name);
+          const cacheKey = runtime
+            ? this.store.mac(
+                project,
+                JSON.stringify([
+                  'step-cache-v1',
+                  'normalization-v4',
+                  tool.name,
+                  runtime.identity,
+                  sha256(content),
+                  lineage.get(path),
+                  budget.tool_ms[tool.name],
+                  budget.analysis_ms,
+                  budget.worker_memory_bytes,
+                  budget.worker_cpus,
+                  budget.worker_pids,
+                  budget.artifact_bytes,
+                  budget.module_count,
+                ]),
+              )
+            : undefined;
+          const cached = cacheKey ? this.store.cached(cacheKey) : null;
+          if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
+          if (performance.now() >= Math.min(end, deadline))
+            return {
+              status: 'skipped',
+              version: null,
+              durationMs: Math.ceil(performance.now() - started),
+              errorCode: deadline <= performance.now() ? 'global_deadline' : 'tool_deadline',
+              output: Buffer.alloc(0),
+            };
+          if (cached && cacheKey)
+            return {
+              ...cached,
+              status: 'success',
+              durationMs: 0,
+              errorCode: null,
+              cacheKey,
+              cacheHit: true,
+            };
+          worker = runtime?.worker ?? worker;
+          const result = await worker.run({
             content,
-            timeoutMs: Math.max(1, timeout),
+            timeoutMs: Math.max(1, Math.min(end, deadline) - performance.now()),
             cleanupMs: budget.cleanup_ms,
             memoryBytes: budget.worker_memory_bytes,
             cpus: budget.worker_cpus,
             pids: budget.worker_pids,
             signal,
           });
+          return {
+            ...result,
+            durationMs: Math.ceil(performance.now() - started),
+            ...(cacheKey ? { cacheKey } : {}),
+          };
         } catch (error) {
+          if (error instanceof ServiceError) throw error;
           if (error instanceof CleanupError || !worker.healthy) throw new CleanupError();
           // The Docker adapter only throws an ordinary error after any attempted
           // container has been cleaned up. Never expose the upstream error text.
@@ -235,18 +303,27 @@ export class AnalysisEngine {
           };
         }
       };
-      const envelope = (content: Buffer) =>
+      const remember = (result: StepResult) => {
+        if (result.cacheKey && !result.cacheHit && result.version)
+          this.store.cacheStep(result.cacheKey, result.output, result.version, current);
+      };
+      const envelope = (content: Buffer, name: ToolName) =>
         Buffer.from(
           JSON.stringify({
             content: content.toString('utf8'),
-            reference_domains: request.reference_domains ?? [],
-            max_bytes: Math.max(
-              0,
-              current.capacity -
-                current.sources.reduce((n, s) => n + s.bytes.length, 0) -
-                budget.response_bytes,
-            ),
-            max_modules: Math.max(0, budget.module_count - current.sources.length),
+            reference_domains:
+              name === 'domains' ? [...(request.reference_domains ?? [])].sort() : [],
+            max_bytes: ['webcrack', 'wakaru'].includes(name)
+              ? Math.max(
+                  0,
+                  current.capacity -
+                    current.sources.reduce((n, s) => n + s.bytes.length, 0) -
+                    budget.response_bytes,
+                )
+              : 0,
+            max_modules: ['webcrack', 'wakaru'].includes(name)
+              ? Math.max(0, budget.module_count - current.sources.length)
+              : 0,
           }),
         );
       for (const name of ['webcrack', 'wakaru'] as const) {
@@ -262,8 +339,9 @@ export class AnalysisEngine {
           response.warnings.push({ tool: name, code: 'fallback_to_original' });
         const result = await run(
           tool,
-          envelope(source.bytes),
+          envelope(source.bytes, name),
           performance.now() + budget.tool_ms[name],
+          source.module.path,
         );
         Object.assign(tool, {
           status: result.status,
@@ -291,6 +369,13 @@ export class AnalysisEngine {
             tool.status = 'error';
             tool.error_code = 'missing_aggregate';
           }
+          if (tool.status === 'success') {
+            tool.cache_hit = result.cacheHit ?? false;
+            remember(result);
+          }
+          const identity = result.cacheKey ?? randomUUID();
+          for (const item of current.sources.filter((s) => s.module.origin === name))
+            lineage.set(item.module.path, identity);
         }
       }
       for (const name of ['jsluice', 'trufflehog', 'graphql', 'domains'] as const) {
@@ -298,12 +383,15 @@ export class AnalysisEngine {
         if (!tool) continue;
         tool.modules_available = current.sources.length;
         const end = performance.now() + budget.tool_ms[name];
+        let allCached = true;
         for (const source of current.sources) {
           const result = await run(
             tool,
-            name === 'jsluice' ? source.bytes : envelope(source.bytes),
+            name === 'jsluice' ? source.bytes : envelope(source.bytes, name),
             end,
+            source.module.path,
           );
+          allCached &&= result.cacheHit === true;
           tool.duration_ms += result.durationMs;
           tool.version ??= result.version;
           if (result.status !== 'success') {
@@ -330,6 +418,7 @@ export class AnalysisEngine {
               merge(response, 'endpoints', normalized.endpoints);
               merge(response, 'secrets', normalized.secrets);
               reasons(normalized.reasons);
+              if (!normalized.partial) remember(result);
               if (normalized.partial) {
                 tool.status = 'partial';
                 tool.error_code = normalized.syntaxError ? 'syntax_incomplete' : 'output_truncated';
@@ -357,6 +446,7 @@ export class AnalysisEngine {
               merge(response, 'gql_operations', normalized.gql_operations);
               merge(response, 'subdomains', normalized.subdomains);
               reasons(output.reasons);
+              if (!output.partial) remember(result);
               if (output.partial) {
                 tool.status = 'partial';
                 tool.error_code = output.error_code;
@@ -373,11 +463,13 @@ export class AnalysisEngine {
               }
             }
             tool.modules_analyzed = (tool.modules_analyzed ?? 0) + 1;
-          } catch {
+          } catch (error) {
+            if (error instanceof ServiceError) throw error;
             tool.status = 'error';
             tool.error_code = 'invalid_worker_output';
           }
         }
+        tool.cache_hit = allCached && tool.status === 'success';
         // A failed module never cancels findings from completed modules.
         if (tool.status === 'success' && tool.modules_analyzed !== tool.modules_available) {
           tool.status = 'partial';
@@ -436,6 +528,10 @@ export class AnalysisEngine {
     }
   }
   private statuses(response: AnalyzeResponse) {
+    for (const tool of response.tools) if (tool.status !== 'success') tool.cache_hit = false;
+    const hits = response.tools.filter((tool) => tool.cache_hit).length;
+    response.cache.status =
+      hits === 0 ? 'miss' : hits === response.tools.length ? 'hit' : 'partial_hit';
     response.truncation.truncated = response.truncation.reasons.length > 0;
     const detectors: Record<keyof AnalyzeResponse['coverage'], ToolName[]> = {
       endpoints: ['jsluice'],

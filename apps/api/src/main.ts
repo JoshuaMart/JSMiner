@@ -15,7 +15,7 @@ try {
     });
   }
   await app.listen({ host: config.host, port: config.port });
-  console.info(`JSMiner phase 3 listening on ${config.host}:${config.port}`);
+  console.info(`JSMiner phase 4 listening on ${config.host}:${config.port}`);
 } catch {
   await app?.close().catch(() => {});
   console.error('Unable to start JSMiner. Check JSMINER_CONFIG, storage and port availability.');

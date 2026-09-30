@@ -49,7 +49,7 @@ Si un seul transformateur est sélectionné, il reçoit l’original. Chaque out
 
 L’extraction sur l’original reste disponible même si tous les transformateurs échouent. Les représentations produites ensuite sont analysées dans le budget restant. Un fichier JavaScript ordinaire constitue un module `original/bundle.js` même si aucun bundle n’a pu être déplié.
 
-En phase 3, les transformations précèdent les extracteurs et les modules sont traités séquentiellement. L’original reste le premier module fourni à chaque extracteur. TruffleHog est proposé pour la détection principale des secrets, avec les matchers JavaScript de jsluice en complément. Ils examinent uniquement les fichiers de l’analyse en cours ; leurs résultats sont regroupés avec leur provenance. Le [modèle de résultats](/reference/results/#secrets-potentiels) précise ce partage.
+Les transformations précèdent les extracteurs et les modules sont traités séquentiellement. L’original reste le premier module fourni à chaque extracteur. TruffleHog est proposé pour la détection principale des secrets, avec les matchers JavaScript de jsluice en complément. Ils examinent uniquement les fichiers de l’analyse en cours ; leurs résultats sont regroupés avec leur provenance. Le [modèle de résultats](/reference/results/#secrets-potentiels) précise ce partage.
 
 ## Acquisition
 

@@ -5,9 +5,9 @@ description: Contrats v0.1, validation disponible et comportement métier prévu
 
 ## Conventions
 
-**Profil hors ligne implémenté en phase 3.** `content` accepte tous les outils documentés ; les lectures `/source` exposent les représentations conservées. Le mode URL reste à livrer (`501 url_not_implemented`). Un outil dont l’image est absente ou incompatible est signalé `skipped / tool_unavailable`. JSON UTF-8, noms de champs en `snake_case`, dates UTC au format RFC 3339. Toutes les routes nécessitent un jeton Bearer opaque associé à un projet par la configuration serveur. Les droits sont `analysis:write`, `analysis:read` et `source:read`. `POST /analyze` exige les deux premiers droits, les routes `/source` le troisième. Voir le [guide de configuration](/guides/development/).
+**Acquisition et cache implémentés en phase 4.** `content` accepte tous les outils documentés ; les lectures `/source` exposent les représentations conservées. Le mode `url` accepte les origines autorisées dans `capture.origins` ; sans configuration, il répond `403 destination_denied`. Un outil dont l’image est absente ou incompatible est signalé `skipped / tool_unavailable`. JSON UTF-8, noms de champs en `snake_case`, dates UTC au format RFC 3339. Toutes les routes nécessitent un jeton Bearer opaque associé à un projet par la configuration serveur. Les droits sont `analysis:write`, `analysis:read` et `source:read`. `POST /analyze` exige les deux premiers droits, les routes `/source` le troisième. Voir le [guide de configuration](/guides/development/).
 
-Le contrat machine est `packages/contracts/schema.json`, complété par les invariants de `validateContract` ; `packages/contracts/openapi.json` est généré. Les exemples de réponses métier ci-dessous sont vérifiés comme fixtures du contrat. `GET /health`, authentifié avec `analysis:read`, vérifie réellement SQLite et répond `200` avec les champs `status: "ok"`, `phase: 3`, `storage: "ready"`.
+Le contrat machine est `packages/contracts/schema.json`, complété par les invariants de `validateContract` ; `packages/contracts/openapi.json` est généré. Les exemples de réponses métier ci-dessous sont vérifiés comme fixtures du contrat. `GET /health`, authentifié avec `analysis:read`, vérifie réellement SQLite et répond `200` avec les champs `status: "ok"`, `phase: 4`, `storage: "ready"`.
 
 Les champs inconnus sont refusés en entrée. Les clients tolèrent les nouveaux champs de réponse. Une rupture nécessite une nouvelle version de contrat ; la réponse annonce `schema_version: "0.1"`.
 
@@ -28,7 +28,7 @@ La v0.1 est synchrone et bornée. Aucun `202` ni endpoint de polling n’est pr�
 
 Limites complémentaires proposées : URL de 4 096 caractères maximum ; au plus 20 domaines de référence, sans wildcard, normalisés en noms DNS ASCII. Les paramètres de sélection ne constituent aucune autorisation réseau. Les requêtes HTTP compressées sont refusées en v0.1 ; le corps JSON est limité à 64 MiB et `content` est contrôlé après décodage.
 
-Depuis le commit `32142b2`, le hash Fingerprinter brut identifie le corps CDP complet et n’a pas le préfixe `sha256:`. Ajouter ce préfixe pour le transmettre comme assertion sur les mêmes octets ; sinon omettre `script_hash`. Les anciens hashes tronqués à 2 MiB ne doivent pas être réutilisés comme hashes complets. Le serveur devra toujours le recalculer avant le cache et refuser une différence avec `409 hash_mismatch`. Voir la [convention de hash](/architecture/storage/).
+Depuis le commit `32142b2`, le hash Fingerprinter brut identifie le corps CDP complet et n’a pas le préfixe `sha256:`. Ajouter ce préfixe pour le transmettre comme assertion sur les mêmes octets ; sinon omettre `script_hash`. Les anciens hashes tronqués à 2 MiB ne doivent pas être réutilisés comme hashes complets. Le serveur le recalcule avant toute consultation du cache et refuse une différence avec `409 script_hash_mismatch`. Voir la [convention de hash](/architecture/storage/).
 
 `base_url` n’est pas déduite de l’URL du script : un bundle hébergé sur un CDN peut appeler l’origine de la page. Sans base explicite, les endpoints relatifs restent non résolus. Une base ne déclenche jamais de requête.
 
@@ -126,10 +126,12 @@ Les versions et durées ci-dessous sont illustratives. Le hash correspond exacte
 | `tools[].status` | `success`, `partial`, `timeout`, `error`, `skipped` |
 | `tools[].error_code` | Code stable ou `null` ; par exemple `tool_timeout`, `output_limit`, `parse_error`, `global_deadline`, `tool_unavailable` |
 | `coverage[category]` | `complete`, `partial`, `failed`, `not_requested` |
-| `cache.status` | `hit` : toutes les étapes demandées réutilisées ; `partial_hit` : certaines ; `miss` : aucune |
+| `cache.status` | `hit` : tous les outils entièrement réutilisés ; `partial_hit` : certains ; `miss` : aucun outil entièrement réutilisé |
 | `truncation` | Booléen et codes de limite atteinte : `response_bytes`, `finding_count`, `evidence_count`, `artifact_bytes`, `module_count`, `field_bytes` |
 
 Une extraction terminée sans observation est un succès. `complete` décrit l’exécution demandée, sans garantir la découverte de tout comportement possible. Une transformation demandée qui échoue rend la couverture des catégories extraites au plus `partial`, même si l’original a été analysé intégralement. Une catégorie sans résultat exploitable après échec de son extracteur vaut `failed`. Une catégorie non sélectionnée vaut `not_requested`.
+
+La réutilisation se fait par entrée effective de chaque outil. `cache_hit` vaut `true` seulement si toutes ses entrées ont été réutilisées avec succès ; une réutilisation partielle des modules peut donc rester comptée comme `miss` pour cet outil. Les durées des outils entièrement réutilisés valent `0` et excluent le coût de lecture et de vérification du cache.
 
 Un traitement sur cache garde un statut `success` et indique `cache_hit: true`. Les erreurs ne suppriment pas les observations déjà validées. Un outil connu mais indisponible est `skipped` avec `tool_unavailable`. Chaque outil demandé possède une entrée, même s’il n’a pas démarré.
 
@@ -212,19 +214,18 @@ Paramètres : `offset` en octets UTF-8, entier positif ou nul, défaut 0 ; `max_
 | --- | --- |
 | `400` | JSON invalide, entrée ambiguë, outil inconnu, champ ou curseur invalide |
 | `401` | Authentification absente ou invalide |
-| `403` | Droit manquant ou URL d’acquisition refusée |
+| `403` | Droit manquant ou `destination_denied` pour une capture refusée |
 | `404` | Handle/module inconnu ou handle appartenant à un autre projet |
-| `409` | `hash_mismatch` : hash annoncé différent du contenu reçu |
+| `409` | `script_hash_mismatch` : hash annoncé différent du contenu reçu |
 | `410` | Handle expiré ou révoqué, tombstone encore connu du propriétaire |
-| `413` | Corps ou script trop volumineux |
+| `413` | Corps ou script trop volumineux ; `capture_too_large` avant décompression, `script_too_large` après décompression |
 | `415` | Type de requête ou compression HTTP non pris en charge |
 | `416` | Offset supérieur à la taille du module |
 | `422` | Domaine de référence manquant, entrée vide/non UTF-8/HTML, paramètres source invalides |
 | `429` | Capacité d’exécution ou quota insuffisant ; `Retry-After` présent |
-| `502` | Acquisition distante impossible ou statut distant refusé, redirection comprise |
-| `504` | Délai d’acquisition dépassé |
+| `502` | `capture_failed` : réseau, transfert tronqué ou décompression invalide ; `capture_status` : statut autre que 200, redirection comprise ; `capture_encoding` : compression non prise en charge |
+| `504` | `capture_timeout` : délai d’acquisition dépassé |
 | `503` | Service indisponible ou arrêt d’un worker impossible à confirmer |
 | `500` | Échec interne de persistance ou de publication |
-| `501` | Mode URL non implémenté ; utiliser une entrée `content` |
 
 Les messages d’erreur n’incluent ni code source, ni sorties brutes, ni chemins locaux, ni URL contenant des données sensibles.

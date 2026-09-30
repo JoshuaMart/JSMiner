@@ -169,7 +169,7 @@ test('content yields a complete empty analysis, immutable original and UTF-8 rea
         payload: { url: 'https://example.invalid/bundle.js' },
       })
     ).statusCode,
-    501,
+    403,
   );
 });
 

@@ -1046,7 +1046,7 @@
         },
         "phase": {
           "type": "integer",
-          "const": 3
+          "const": 4
         },
         "storage": {
           "type": "string",

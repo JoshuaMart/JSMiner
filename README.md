@@ -2,7 +2,7 @@
 
 Service TypeScript d’analyse statique de JavaScript, avec résultats compacts et consultation ciblée des sources.
 
-**Phase 3 : profil hors ligne complet disponible.** Node.js 24.21.0, pnpm 10.33.0, Fastify et SQLite. `POST /analyze` accepte `content`, enchaîne webcrack et Wakaru, puis applique jsluice, TruffleHog et les extracteurs GraphQL/domaines dans des conteneurs isolés. Le mode URL et le cache restent en phase 4.
+**Phase 4 : acquisition autorisée et cache disponibles.** Node.js 24.21.0, pnpm 10.33.0, Fastify et SQLite. `POST /analyze` accepte `content` ou une `url` autorisée côté serveur, enchaîne webcrack et Wakaru, puis applique jsluice, TruffleHog et les extracteurs GraphQL/domaines dans des conteneurs isolés. Les étapes réussies sont mises en cache par contenu, image immuable et profil de traitement ; chaque requête publie un nouveau handle. Les captures URL sont désactivées tant qu’aucune origine n’est configurée.
 
 ## Démarrer le service
 
@@ -65,6 +65,7 @@ pnpm dev
 Compiler le site avec `pnpm build` depuis `docs/`.
 
 - [Développement et configuration](docs/src/content/docs/guides/development.md)
+- [Rapport de validation de phase 4](docs/src/content/docs/reference/phase-4-validation.md)
 - [Rapport de validation de phase 3](docs/src/content/docs/reference/phase-3-validation.md)
 - [Rapport de validation de phase 2](docs/src/content/docs/reference/phase-2-validation.md)
 - [Rapport de validation de phase 1](docs/src/content/docs/reference/phase-1-validation.md)

@@ -10,6 +10,8 @@ export interface ServiceConfig {
   artifact_directory?: string;
   worker_image: string;
   offline_worker_image: string;
+  capture: { origins: { origin: string; allow_private: boolean }[]; wire_bytes: number };
+  cache: { enabled: boolean; retention_ms: number; max_bytes: number };
   tokens: { sha256: string; project_id: string; permissions: Permission[] }[];
   budgets: {
     http_body_bytes: number;
@@ -53,6 +55,23 @@ export function parseConfig(value: unknown, baseDirectory = process.cwd()): Serv
     copy.budgets.source_read_bytes < 4
   )
     throw new Error('Inconsistent resource budgets.');
+  const origins = new Set<string>();
+  for (const rule of copy.capture.origins) {
+    const url = new URL(rule.origin);
+    if (
+      !/^https?:\/\/[^/\\?#]+\/?$/i.test(rule.origin) ||
+      !['http:', 'https:'].includes(url.protocol) ||
+      url.username ||
+      url.password ||
+      url.pathname !== '/' ||
+      url.search ||
+      url.hash ||
+      origins.has(url.origin)
+    )
+      throw new Error('Invalid capture origin.');
+    rule.origin = url.origin;
+    origins.add(url.origin);
+  }
   copy.database = copy.database === ':memory:' ? ':memory:' : resolve(baseDirectory, copy.database);
   if (copy.artifact_directory)
     copy.artifact_directory = resolve(baseDirectory, copy.artifact_directory);

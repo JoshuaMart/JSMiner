@@ -81,6 +81,11 @@ export interface WorkerResult {
 export interface Worker {
   run(input: WorkerInput): Promise<WorkerResult>;
   readonly healthy: boolean;
+  /** Resolve an immutable runtime identity before cache lookup. */
+  pin?(
+    timeoutMs: number,
+    signal: AbortSignal,
+  ): Promise<{ identity: string; worker: Worker } | null>;
 }
 export class CleanupError extends Error {
   constructor() {
@@ -90,7 +95,10 @@ export class CleanupError extends Error {
 
 /** One container per input; no bind mounts, Docker socket, credentials, or network. */
 export class DockerWorker implements Worker {
-  healthy = true;
+  private health = { healthy: true };
+  get healthy() {
+    return this.health.healthy;
+  }
   constructor(
     private readonly image: string,
     private readonly owner: string,
@@ -103,6 +111,34 @@ export class DockerWorker implements Worker {
       maxBytes: 2 * 1024 * 1024 + 65536,
     },
   ) {}
+
+  async pin(timeoutMs: number, signal: AbortSignal) {
+    if (!this.healthy) throw new CleanupError();
+    if (signal.aborted || timeoutMs <= 0) return null;
+    const image = await this.command(
+      [
+        'image',
+        'inspect',
+        this.image,
+        '--format',
+        '{{.Id}} {{index .Config.Labels "io.jsminer.version"}} {{index .Config.Labels "io.jsminer.protocol"}}',
+      ],
+      { timeoutMs, signal, maxBytes: 65536 },
+    );
+    const [id, version, protocol] = image.output.toString().trim().split(' ');
+    if (
+      image.code !== 0 ||
+      image.fault ||
+      !id ||
+      !/^sha256:[0-9a-f]{64}$/.test(id) ||
+      version !== this.profile.version ||
+      protocol !== this.profile.protocol
+    )
+      return null;
+    const worker = new DockerWorker(id, this.owner, this.command, this.now, this.profile);
+    worker.health = this.health;
+    return { identity: JSON.stringify([id, this.profile]), worker };
+  }
 
   async recover(cleanupMs: number) {
     const limit = this.now() + cleanupMs;
@@ -129,7 +165,7 @@ export class DockerWorker implements Worker {
       if (after.code !== 0 || after.fault || after.output.toString().trim())
         throw new CleanupError();
     } catch {
-      this.healthy = false;
+      this.health.healthy = false;
       throw new CleanupError();
     }
   }
@@ -242,7 +278,7 @@ export class DockerWorker implements Worker {
       if (uncertainCreation || absent.code !== 0 || absent.fault || absent.output.toString().trim())
         throw new CleanupError();
     } catch {
-      this.healthy = false;
+      this.health.healthy = false;
       throw new CleanupError();
     }
   }

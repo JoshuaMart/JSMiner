@@ -160,3 +160,48 @@ test('old worker protocol is refused before container creation', async () => {
     ['image'],
   );
 });
+
+test('cache identity follows immutable image ID and execution stays pinned if the tag moves', async () => {
+  const updatedImage = `sha256:${'b'.repeat(64)}`;
+  const { calls, worker } = fixture({
+    image: (args) =>
+      success(
+        `${args[2] === image ? image : calls.length === 1 ? image : updatedImage} ${JSLUICE_VERSION} ${JSLUICE_PROTOCOL}`,
+      ),
+  });
+  const pinned = await worker.pin(1000, input().signal);
+  assert.ok(pinned.identity.includes(image));
+  await pinned.worker.run(input());
+  assert.equal(calls.find((call) => call.args[0] === 'create').args.at(-1), image);
+  assert.notEqual((await worker.pin(1000, input().signal)).identity, pinned.identity);
+});
+
+test('missing or incompatible images cannot unlock a cached worker identity', async () => {
+  for (const imageResult of [
+    success(`${image} wrong-version ${JSLUICE_PROTOCOL}`),
+    { ...success(), code: 1 },
+    { ...success(), fault: 'timeout' },
+  ]) {
+    const { worker, calls } = fixture({ image: () => imageResult });
+    assert.equal(await worker.pin(1000, input().signal), null);
+    assert.equal(calls.length, 1);
+  }
+});
+
+test('pinned workers share the cleanup failure latch with their supervisor', async () => {
+  const { worker } = fixture({ ps: () => success('deadbeef1234') });
+  const pinned = await worker.pin(1000, input().signal);
+  await assert.rejects(pinned.worker.run(input()), CleanupError);
+  assert.equal(worker.healthy, false);
+  await assert.rejects(worker.pin(1000, input().signal), CleanupError);
+  await assert.rejects(worker.run(input()), CleanupError);
+});
+
+test('cancelled or expired pinning does not start Docker inspection', async () => {
+  const { worker, calls } = fixture();
+  const controller = new AbortController();
+  controller.abort();
+  assert.equal(await worker.pin(1000, controller.signal), null);
+  assert.equal(await worker.pin(0, input().signal), null);
+  assert.equal(calls.length, 0);
+});

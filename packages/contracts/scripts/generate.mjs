@@ -27,7 +27,6 @@ const errorDescriptions = {
   422: 'Invalid content or semantic parameters',
   429: 'Capacity or storage quota exceeded',
   500: 'Internal failure',
-  501: 'URL acquisition is not implemented (offline content only)',
   502: 'Capture failed',
   503: 'Service unavailable',
   504: 'Capture timeout',
@@ -109,7 +108,7 @@ const document = {
         requestBody: { required: true, content: json('AnalyzeRequest') },
         responses: responses(
           'AnalyzeResponse',
-          [400, 401, 403, 409, 413, 415, 422, 429, 500, 501, 502, 503, 504],
+          [400, 401, 403, 409, 413, 415, 422, 429, 500, 502, 503, 504],
         ),
       },
     },

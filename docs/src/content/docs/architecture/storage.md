@@ -11,9 +11,9 @@ La convention Fingerprinter a été vérifiée au commit `32142b243f02b45432d79a
 
 La limite de 2 MiB reste réservée aux détecteurs et n’intervient plus dans le hash des scripts. Fingerprinter exige un chargement signalé terminé et omet le hash en cas de corps vide, d’échec, d’annulation ou de dépassement de sa limite de hash de **32 MiB**. Il ne publie jamais volontairement le hash d’un préfixe. CDP ne fournit cependant pas de preuve de complétude du corps retourné.
 
-**Décision : conserver le hash intégral de JSMiner.** Le client ajoute `sha256:` à un hash Fingerprinter disponible pour en faire une assertion sur les octets soumis. JSMiner conserve son plafond d’entrée de 10 MiB et devra recalculer le hash. Sans hash amont, ou si l’identité des octets n’est pas établie, le client peut omettre le champ facultatif `script_hash`. L’ancienne convention tronquée, antérieure au correctif, ne doit pas être réutilisée comme identité de contenu complet ; les anciens hashes nécessitent une nouvelle capture ou doivent être ignorés.
+**Décision : conserver le hash intégral de JSMiner.** Le client ajoute `sha256:` à un hash Fingerprinter disponible pour en faire une assertion sur les octets soumis. JSMiner conserve son plafond d’entrée de 10 MiB et recalcule le hash. Sans hash amont, ou si l’identité des octets n’est pas établie, le client peut omettre le champ facultatif `script_hash`. L’ancienne convention tronquée, antérieure au correctif, ne doit pas être réutilisée comme identité de contenu complet ; les anciens hashes nécessitent une nouvelle capture ou doivent être ignorés.
 
-Un hash fourni reste une assertion contrôlée par recalcul, jamais une preuve d’autorisation ni un moyen de lire le cache sans fournir l’entrée. Le contrat prévoit `409 hash_mismatch` si les octets diffèrent ; cette vérification métier sera implémentée avec l’analyse et l’acquisition.
+Un hash fourni reste une assertion contrôlée par recalcul, jamais une preuve d’autorisation ni un moyen de lire le cache sans fournir l’entrée. Le serveur répond `409 script_hash_mismatch` si les octets diffèrent, avant toute consultation du cache.
 
 L’identité d’une étape combine, sous une sérialisation canonique versionnée :
 
@@ -27,15 +27,17 @@ namespace du projet
 + hashes des entrées auxiliaires, si présentes
 ```
 
+L’implémentation utilise un HMAC propre au projet sur un tableau JSON ordonné `step-cache-v1` / `normalization-v4`. L’identité Docker contient le digest local immuable, le protocole, la version et les options du superviseur ; le digest inclut les règles et options embarquées dans l’image. Le contenu exact de l’enveloppe, la filiation de transformation et les budgets de traitement complètent cette identité.
+
 Le hash seul ne suffit pas : une mise à jour d’un outil peut produire d’autres observations sur les mêmes octets.
 
 ## Cache en deux niveaux
 
-Le cache des étapes conserve des résultats statiques indépendants du contexte de navigation. Une extraction sur un module transformé utilise le hash de ce module et l’identité de sa transformation. Les ensembles d’outils sont triés et dédupliqués avant calcul de l’identité d’analyse.
+Le cache des étapes conserve des résultats statiques indépendants du contexte de navigation. Une extraction sur un module transformé utilise le hash de ce module et l’identité de sa transformation. Les clés sont calculées par étape, indépendamment des autres outils demandés ; les domaines de référence sont triés avant sérialisation.
 
 Le plan ordonné des transformations et l’entrée effective font aussi partie de l’identité. Wakaru sur `webcrack/bundle.js` et Wakaru sur l’original après un repli ne partagent pas la même clé d’étape. Les versions de détecteurs, règles et options hors ligne de TruffleHog participent à sa clé d’extraction.
 
-La vue exposée au client ajoute `base_url`, les domaines de référence, le projet propriétaire et les règles de masquage. Deux requêtes portant sur les mêmes octets mais des bases URL différentes peuvent réutiliser l’extraction brute ; elles recalculent les URL résolues et les sous-domaines. Elles ne partagent pas aveuglément une réponse finale.
+La vue exposée au client ajoute `base_url`, les domaines de référence, le projet propriétaire et les règles de masquage. Deux requêtes portant sur les mêmes octets mais des bases URL différentes peuvent réutiliser l’extraction brute ; elles recalculent les URL résolues. Le détecteur `domains` inclut la liste de référence dans sa propre clé : modifier cette liste relance ce détecteur, mais conserve les autres extractions compatibles. Elles ne partagent pas aveuglément une réponse finale.
 
 En mode URL, l’entrée doit être acquise avant de savoir si son contenu est en cache. Une revalidation HTTP est un mécanisme séparé, reporté après la v0.1.
 
@@ -43,7 +45,7 @@ En mode URL, l’entrée doit être acquise avant de savoir si son contenu est e
 
 Les étapes terminées avec succès peuvent être réutilisées. Un échec, un timeout ou une sortie tronquée n’est pas mémorisé comme un succès complet. Une nouvelle requête retente les étapes incomplètes ; les réussites indépendantes restent réutilisables.
 
-La publication passe par un répertoire temporaire, un manifeste validé et une transaction de métadonnées. Une clé en cours de traitement est protégée contre les écritures concurrentes. Un résultat du cache n’est valide que si ses artefacts sont encore présents et intègres.
+La publication passe par un répertoire temporaire, un manifeste validé et une transaction de métadonnées. Une clé en cours de traitement est protégée contre les écritures concurrentes. Une entrée est publiée par fichier temporaire, renommage puis insertion SQLite atomique sous le verrou exclusif du stockage. Les fichiers non indexés sont nettoyés au redémarrage. Avant réutilisation, la taille et le SHA-256 sont comparés aux métadonnées, puis le protocole de sortie est validé à nouveau. Une entrée absente ou corrompue est recalculée. Les copies du cache restent privées (`0600`) et peuvent contenir des secrets bruts ; seule la vue masquée est exposée par l’analyse.
 
 ## Handles et manifeste
 
@@ -54,8 +56,8 @@ Exemples de chemins logiques :
 ```text
 original/bundle.js
 webcrack/bundle.js
-webcrack/modules/0001.js
-wakaru/modules/0001.js
+webcrack/modules/m0.js
+wakaru/modules/m0.js
 ```
 
 Chaque entrée possède un chemin logique, une origine, un hash, une taille, un nombre de lignes et un `parent_path` vers son entrée de transformation (`null` pour l’original). Le parent est conservé tant que le handle est valide. Les noms suggérés par les outils peuvent être conservés pour l’affichage ; ils ne deviennent pas directement des chemins du stockage.
@@ -64,9 +66,9 @@ Les chemins API sont comparés au manifeste après un décodage unique contrôl�
 
 ## Rétention et confidentialité
 
-Valeurs proposées : expiration fixe après 24 heures pour les handles, rétention maximale de 24 heures après création pour les entrées de cache, quota local global de 1 GiB à ajuster. Une lecture ne prolonge pas un handle. Une entrée du cache peut être évincée ; les artefacts d’un handle valide restent référencés jusqu’à son expiration.
+Valeurs par défaut : expiration fixe après 24 heures pour les handles, rétention maximale de 24 heures après création pour les entrées de cache, quota local global de 1 GiB à ajuster. Une lecture ne prolonge pas un handle. Une entrée du cache peut être évincée ; les artefacts d’un handle valide sont conservés séparément jusqu’à son expiration.
 
-La capacité est réservée avant admission. Si le quota est insuffisant, la requête est refusée plutôt que d’invalider silencieusement un handle actif. Une suppression administrative peut révoquer un handle ; il est alors traité comme expiré.
+La capacité est réservée avant admission. Si le quota est insuffisant, la requête est refusée plutôt que d’invalider silencieusement un handle actif. Aucune route de suppression administrative n’est exposée en v0.1.
 
 La purge supprime sources, résultats sensibles, index et temporaires devenus inutiles. Un tombstone minimal permet de répondre `410` au propriétaire pendant 24 heures supplémentaires ; ensuite, `404`. Les consultations interprojets retournent toujours `404`.
 
