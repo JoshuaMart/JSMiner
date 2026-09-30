@@ -363,13 +363,14 @@ test('cleanup failure blocks admissions and health without publishing a handle',
     worker: {
       healthy: true,
       async run() {
-        throw new CleanupError();
+        throw new CleanupError('cleanup_verify', 'timeout');
       },
     },
   });
   const first = await analyze(app);
   assert.equal(first.statusCode, 503);
   assert.equal(first.json().error.code, 'worker_cleanup_unconfirmed');
+  assert.match(first.json().error.message, /cleanup_verify: timeout/);
   assert.equal((await analyze(app)).json().error.code, 'service_unavailable');
   assert.equal((await app.inject({ url: '/health', headers: auth() })).statusCode, 503);
 });

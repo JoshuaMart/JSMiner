@@ -27,4 +27,5 @@ export interface Adapter {
   run(input: AdapterInput): Promise<AdapterOutput>;
 }
 
+export type { BatchResult } from './batch.js';
 export * from './docker.js';

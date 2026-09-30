@@ -68,16 +68,17 @@ Le cache n’ajoute pas de capacité à `budgets.storage_bytes`. Avec `enabled: 
 
 ## Budgets
 
-Les valeurs sont des entiers positifs ; le défaut est aussi le maximum autorisé. Contraintes : `source_read_bytes ≥ 4`, `script_bytes ≤ http_body_bytes`, `artifact_bytes ≤ storage_bytes`. Un Kio vaut 1 024 octets, un Mio 1 048 576 octets.
+Les valeurs sont des entiers positifs. Sauf pour `finding_count` et `worker_memory_bytes`, le défaut est aussi le maximum autorisé. Contraintes : `source_read_bytes ≥ 4`, `script_bytes ≤ http_body_bytes`, `artifact_bytes ≤ storage_bytes`. Un Kio vaut 1 024 octets, un Mio 1 048 576 octets.
 
-| Clé de `budgets` | Défaut et maximum | Effet |
+| Clé de `budgets` | Défaut (maximum si différent) | Effet |
 | --- | ---: | --- |
 | `http_body_bytes` | `67108864` | Corps JSON HTTP, avant décodage de `content` |
 | `script_bytes` | `10485760` | Script UTF-8 après décodage ou décompression |
 | `capture_ms` | `12000` | Acquisition URL, incluse dans le délai global |
 | `analysis_ms` | `90000` | Travail global, acquisition et publication incluses |
 | `cleanup_ms` | `10000` | Arrêt et vérification du nettoyage, budget distinct |
-| `worker_memory_bytes` | `1073741824` | Mémoire par conteneur |
+| `worker_memory_bytes` | `2147483648` (max. `8589934592`) | Mémoire par conteneur : 2 Gio par défaut, jusqu’à 8 Gio |
+| `finding_count` | `200` (max. `2000`) | Observations par catégorie, par extraction et dans la réponse fusionnée |
 | `worker_cpus` | `2` | CPU par conteneur |
 | `worker_pids` | `128` | Processus par conteneur |
 | `artifact_bytes` | `67108864` | Sources conservées par analyse |
@@ -102,13 +103,19 @@ Délais dans `budgets.tool_ms` :
 | `domains` | `3000` ms |
 
 
-Le budget d’un extracteur couvre tous ses modules ; le délai global prévaut. `active_workers: 2` n’active pas de parallélisme : l’exécution reste séquentielle.
+Le budget d’un extracteur couvre le lot de modules absents du cache, dans un seul conteneur ; le délai global prévaut. `active_workers: 2` n’active pas de parallélisme : l’exécution reste séquentielle.
 
-Pour abaisser des plafonds, ajoutez uniquement les valeurs à changer :
+Le tas JavaScript des workers Node est réglé à environ 70 % du budget du conteneur, avec une réserve pour les autres allocations et `/tmp`. Un épuisement mémoire identifié produit `memory_limit` ; augmenter le budget ne garantit pas qu’un script complexe terminera dans le délai.
+
+`finding_count` s’applique avant dédoublonnage et filtres : une réponse peut contenir moins de résultats tout en signalant une troncature. Les limites de sortie des workers (2 Mio) et de réponse HTTP restent applicables.
+
+Ajoutez uniquement les valeurs à changer :
 
 ```json
 {
   "budgets": {
+    "finding_count": 1000,
+    "worker_memory_bytes": 2147483648,
     "analysis_ms": 60000,
     "tool_ms": { "trufflehog": 10000 }
   }

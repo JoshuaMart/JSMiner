@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	github.com/BishopFox/jsluice v0.0.0-20240110145140-0ddfab153e06
-	github.com/smacker/go-tree-sitter v0.0.0-20230720070738-0d0a9f78d8f8
+	github.com/smacker/go-tree-sitter v0.0.0-20240827094217-dd81d9e9be82
 )
 
 require (

@@ -249,3 +249,95 @@ test('valid empty Wakaru outputs remain readable and analyzable by jsluice', asy
   assert.equal(source.json().returned_bytes, 0);
   assert.equal(source.json().next_offset, null);
 });
+
+test('ordinary brace strings do not make GraphQL coverage incomplete', async (t) => {
+  const app = buildApp(configuration);
+  t.after(() => app.close());
+  const response = await request(app, {
+    content:
+      'const ordinary=["{", "{}", "{not valid!", \'{"enabled":true}\']; const q="{ user { id } }";',
+    tools: ['graphql'],
+  });
+  assert.equal(response.statusCode, 200, response.body);
+  const result = response.json();
+  assert.equal(result.status, 'complete', response.body);
+  assert.equal(result.gql_operations.length, 1);
+  assert.deepEqual(result.gql_operations[0].root_fields, ['user']);
+  const incomplete = await request(app, { content: 'const q=gql`{ user {`;', tools: ['graphql'] });
+  assert.equal(incomplete.json().tools[0].error_code, 'incomplete_document');
+});
+
+test('real static worker respects configurable finding caps above and below its old limit', async (t) => {
+  const content = `const q=${JSON.stringify(Array.from({ length: 230 }, (_, i) => `query Q${i} { hello }`).join('\n'))};`;
+  for (const count of [3, 250]) {
+    const app = buildApp({ ...configuration, budgets: { finding_count: count } });
+    t.after(() => app.close());
+    const response = await request(app, { content, tools: ['graphql'] });
+    assert.equal(response.statusCode, 200, response.body);
+    const result = response.json();
+    assert.equal(result.gql_operations.length, Math.min(count, 230));
+    assert.equal(result.status, count < 230 ? 'partial' : 'complete');
+  }
+});
+
+test('Node memory exhaustion is classified without exposing diagnostics and containers are removed', async () => {
+  const owner = `memory-fixture-${randomUUID()}`;
+  const worker = new DockerWorker('jsminer-offline:phase3', owner, undefined, undefined, {
+    version: OFFLINE_VERSION,
+    protocol: '1',
+    command: ['graphql'],
+    nodeHeap: true,
+    maxBytes: 2 * 1024 * 1024,
+    tmpfsBytes: 16 * 1024 * 1024,
+  });
+  const result = await worker.run({
+    content: Buffer.from(JSON.stringify({ content: `const values=[${'0,'.repeat(200000)}];` })),
+    timeoutMs: 15000,
+    cleanupMs: 10000,
+    memoryBytes: 96 * 1024 * 1024,
+    cpus: 1,
+    pids: 32,
+    signal: new AbortController().signal,
+  });
+  assert.equal(result.errorCode, 'memory_limit');
+  assert.equal(result.output.length, 0);
+  assert.equal(
+    (
+      await exec('docker', ['ps', '-aq', '--filter', `label=io.jsminer.owner=${owner}`])
+    ).stdout.trim(),
+    '',
+  );
+});
+
+test('real Wakaru unpack failure preserves its validated aggregate for downstream extraction', async (t) => {
+  const app = buildApp(configuration);
+  t.after(() => app.close());
+  // A hoisted function captures a loader that is later reassigned.
+  const content = `(() => {
+    const modules = {
+      0: (module, exports, require) => {
+        observe(); require = require(1);
+        function observe() { consume(require(2)); }
+        module.exports = require;
+      },
+      1: module => { module.exports = "fixture-one"; },
+      2: module => { module.exports = "fixture-two"; }
+    };
+    const cache = {};
+    (function require(id) {
+      const module = cache[id] = { exports: {} };
+      modules[id](module, module.exports, require);
+      return module.exports;
+    })(0);
+  })();`;
+  const response = await request(app, { content, tools: ['wakaru', 'jsluice'] });
+  assert.equal(response.statusCode, 200, response.body);
+  const result = response.json();
+  assert.equal(result.tools[0].status, 'partial', response.body);
+  assert.equal(result.tools[0].error_code, 'unpack_failed');
+  assert.equal(result.tools[1].status, 'success');
+  assert.equal(result.tools[1].modules_analyzed, 2);
+  const source = await app.inject({ url: `/source/${result.handle}/wakaru/bundle.js`, headers });
+  assert.equal(source.statusCode, 200, source.body);
+  assert.ok(source.json().content.length > 0);
+});

@@ -7,6 +7,7 @@ description: Couverture actuelle, contraintes de déploiement et évolutions pos
 
 - Analyse statique d’un script : valeurs dynamiques, imports à l’exécution et certaines obfuscations peuvent rester inconnus.
 - Aucun test d’accessibilité des endpoints, de validité des secrets ou de propriété des domaines.
+- Un bundle peut dépasser le budget mémoire de webcrack ou contenir des modules que Wakaru ne sait pas déplier ; augmenter les budgets ne garantit pas une transformation complète.
 - GraphQL sans schéma distant ni association à un endpoint (`endpoint_id: null`).
 - Source maps non prises en charge ; aucun suivi des chunks ou fichiers découverts.
 - Résultats tronqués sans pagination des observations omises ; les plafonds figurent dans la [référence API](/reference/api/#réponse-bornée).
@@ -19,7 +20,7 @@ Les huit profils obtiennent les mêmes comptes sur ce corpus. Un préfixe d’en
 
 ## Déploiement
 
-- Une analyse et un worker à la fois, sans file persistante ni reprise de job.
+- Une analyse et un worker à la fois, sans file persistante ni reprise de job. Les extracteurs traitent les modules par lot dans un conteneur ; un lot complexe peut encore dépasser son budget.
 - Stockage local exclusif ; pas de partage entre serveurs ni de suppression administrative des handles actifs.
 - Capture des URL publiques par défaut, sans redirection ni session navigateur ; restrictions réseau communes à tous les projets.
 - Jetons lus au démarrage, sans API d’administration. Un accès distant nécessite un proxy TLS privé.

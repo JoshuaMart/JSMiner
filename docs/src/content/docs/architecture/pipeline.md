@@ -24,7 +24,11 @@ Une étape complète en cache peut remplacer l’exécution du worker. Les [règ
 
 webcrack reçoit l’original. Wakaru reçoit `webcrack/bundle.js` si les deux outils sont sélectionnés et si ce module est exploitable ; sinon, il reçoit l’original. Un repli après échec de webcrack produit `fallback_to_original`.
 
-Wakaru n’est pas relancé sur chacun des modules de webcrack. Les extracteurs parcourent ensuite les représentations conservées, en commençant par l’original. Les doublons ajoutent des preuves au même résultat ; les sources reconstruites gardent leur propre provenance.
+Si le dépliage Wakaru échoue après une transformation valide, le bundle est conservé avec le statut `partial` et le code `unpack_failed`. Si la commande de dépliage échoue, ses fichiers ne sont pas importés.
+
+Wakaru n’est pas relancé sur chacun des modules de webcrack. Chaque extracteur reçoit en un lot les représentations absentes du cache, dans un seul conteneur. jsluice, GraphQL et domaines les traitent séquentiellement, en commençant par l’original ; TruffleHog scanne les fichiers du lot en une seule invocation. Les doublons ajoutent des preuves au même résultat ; les sources reconstruites gardent leur propre provenance.
+
+Les résultats complets de chaque module gardent leur provenance et leur propre entrée de cache. Après un timeout ou un arrêt mémoire, les résultats déjà reçus et validés sont conservés ; une sortie de module inachevée est ignorée. TruffleHog ne confirme les fichiers sans résultat qu’après la fin réussie de son scan. Un lot entièrement en cache ne crée aucun conteneur.
 
 Les modules ne sont importés qu’après contrôle de l’encodage, du chemin et de la taille. Une observation ne référence jamais un module absent du manifeste.
 
@@ -36,7 +40,7 @@ Le budget d’un extracteur couvre tous ses modules. Le délai global restant pr
 
 ## Isolation et nettoyage
 
-Les conteneurs sont sans réseau, non privilégiés, avec une racine en lecture seule et un `/tmp` borné sans exécution de fichiers. Ils ne reçoivent ni volume hôte, ni socket Docker, ni jeton du service. Entrées et sorties sont bornées et validées.
+Les conteneurs sont sans réseau, non privilégiés, avec une racine en lecture seule et un `/tmp` borné sans exécution de fichiers. Ils ne reçoivent ni volume hôte, ni socket Docker, ni jeton du service. Entrées et sorties sont bornées et validées : au plus 2 000 modules, 128 Mio d’entrée encodée et 32 Mio de sortie par lot, avec 2 Mio de résultats par module. Les plafonds de la réponse HTTP restent distincts.
 
 Certaines désobfuscations évaluent des fragments dans le worker ; aucune exécution de ce type n’a lieu dans l’API. L’application n’est pas lancée dans un navigateur.
 

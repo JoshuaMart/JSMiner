@@ -40,22 +40,24 @@ const validate = new Ajv2020().compile<OfflineOutput>({
         },
       },
     },
-    findings: { type: 'array', maxItems: 200, items: { type: 'object' } },
+    findings: { type: 'array', maxItems: 2000, items: { type: 'object' } },
     partial: { type: 'boolean' },
     reasons: {
       type: 'array',
       uniqueItems: true,
       items: { enum: ['finding_count', 'field_bytes', 'artifact_bytes', 'module_count'] },
     },
-    error_code: { enum: [null, 'incomplete_document', 'output_truncated'] },
+    error_code: { enum: [null, 'incomplete_document', 'output_truncated', 'unpack_failed'] },
   },
 });
-export function parseOutput(bytes: Buffer, transform: boolean): OfflineOutput {
+export function parseOutput(bytes: Buffer, transform: boolean, maxFindings = 200): OfflineOutput {
   if (bytes.length > (transform ? 96 * 1024 * 1024 : 2 * 1024 * 1024))
     throw new Error('Invalid output size.');
   const output: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
   if (
     !validate(output) ||
+    output.findings.length > maxFindings ||
+    (!transform && output.error_code === 'unpack_failed') ||
     output.partial !== (output.error_code !== null) ||
     (output.reasons.length > 0 && !output.partial)
   )

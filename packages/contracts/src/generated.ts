@@ -76,22 +76,22 @@ export interface AnalyzeResponse {
   };
   /**
    * @minItems 0
-   * @maxItems 200
+   * @maxItems 2000
    */
   endpoints: Endpoint[];
   /**
    * @minItems 0
-   * @maxItems 200
+   * @maxItems 2000
    */
   secrets: Secret[];
   /**
    * @minItems 0
-   * @maxItems 200
+   * @maxItems 2000
    */
   gql_operations: GraphqlOperation[];
   /**
    * @minItems 0
-   * @maxItems 200
+   * @maxItems 2000
    */
   subdomains: Subdomain[];
   coverage: {

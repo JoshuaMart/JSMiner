@@ -552,3 +552,114 @@ test('an ordinary adapter exception is contained while other requested tools fin
   assert.equal(r.endpoints.length, 1);
   assert.ok(!JSON.stringify(r).includes('private worker diagnostic'));
 });
+
+test('an unpack failure retains a valid aggregate and propagates its specific partial status', async (t) => {
+  const engine = setup(t, {
+    wakaru: worker({
+      ...transform('const transformed = 1;'),
+      partial: true,
+      error_code: 'unpack_failed',
+    }),
+    jsluice: worker(() => jsluice([endpoint()])),
+  });
+  const r = await analyze(engine, ['wakaru', 'jsluice']);
+  assert.equal(r.tools[0].status, 'partial');
+  assert.equal(r.tools[0].error_code, 'unpack_failed');
+  assert.equal(r.tools[0].cache_hit, false);
+  assert.equal(r.tools[1].modules_analyzed, 2);
+  assert.equal(
+    engine.store.read('p', r.handle, 'wakaru/bundle.js').content,
+    'const transformed = 1;',
+  );
+  assert.equal(r.endpoints[0].evidence.length, 2);
+  assert.deepEqual(r.truncation.reasons, []);
+});
+
+test('configured finding limit survives normalization and final redaction merge above 200', async (t) => {
+  const count = 240;
+  const engine = setup(
+    t,
+    {
+      jsluice: worker((input) => {
+        assert.equal(input.findingCount, 250);
+        return jsluice(Array.from({ length: count }, (_, i) => endpoint(`/api/item/${i}`)));
+      }),
+    },
+    { finding_count: 250 },
+  );
+  const r = await analyze(engine, ['jsluice']);
+  assert.equal(r.endpoints.length, count);
+  assert.equal(r.status, 'complete');
+});
+
+test('finding limits apply across representations and reject excessive worker output', async (t) => {
+  const engine = setup(
+    t,
+    {
+      wakaru: worker(transform('const other = 2;')),
+      jsluice: worker((input) =>
+        jsluice([endpoint(input.content.toString().includes('other') ? '/b' : '/a')]),
+      ),
+    },
+    { finding_count: 1 },
+  );
+  const r = await analyze(engine, ['wakaru', 'jsluice']);
+  assert.equal(r.endpoints.length, 1);
+  assert.ok(r.truncation.reasons.includes('finding_count'));
+  const invalid = setup(
+    t,
+    { jsluice: worker(() => jsluice([endpoint('/a'), endpoint('/b')])) },
+    { finding_count: 1 },
+  );
+  const rejected = await analyze(invalid, ['jsluice']);
+  assert.equal(rejected.tools[0].error_code, 'invalid_worker_output');
+});
+
+test('batch timeout retains complete module findings and reuses their cache independently', async (t) => {
+  const sizes = [];
+  const transformWorker = worker(transform('const rebuilt=2;'));
+  transformWorker.pin = async () => ({
+    identity: 'transform-batch-fixture',
+    worker: transformWorker,
+  });
+  const extractor = {
+    healthy: true,
+    async pin() {
+      return { identity: 'extractor-batch-fixture', worker: this };
+    },
+    async run() {
+      throw new Error('single module dispatch is unexpected');
+    },
+    async runBatch(input) {
+      sizes.push(input.contents.length);
+      if (sizes.length === 1)
+        return {
+          results: [jsluice([endpoint('/original')])],
+          durationMs: 1,
+          terminal: {
+            status: 'timeout',
+            version: JSLUICE_VERSION,
+            durationMs: 0,
+            errorCode: 'timeout',
+            output: Buffer.alloc(0),
+          },
+        };
+      assert.equal(input.contents[0].toString(), 'const rebuilt=2;');
+      return { results: [jsluice([endpoint('/rebuilt')])], terminal: null, durationMs: 1 };
+    },
+  };
+  const engine = setup(t, { webcrack: transformWorker, jsluice: extractor });
+  const first = await analyze(engine, ['webcrack', 'jsluice']);
+  assert.equal(first.tools[1].status, 'timeout');
+  assert.equal(first.tools[1].modules_analyzed, 1);
+  assert.equal(first.endpoints[0].evidence[0].module_path, 'original/bundle.js');
+  const second = await analyze(engine, ['webcrack', 'jsluice']);
+  assert.equal(second.tools[1].status, 'success');
+  assert.equal(second.tools[1].modules_analyzed, 2);
+  assert.equal(
+    second.endpoints.find((e) => e.value === '/rebuilt').evidence[0].module_path,
+    'webcrack/bundle.js',
+  );
+  assert.equal((await analyze(engine, ['webcrack', 'jsluice'])).cache.status, 'hit');
+  assert.deepEqual(sizes, [2, 1]);
+});

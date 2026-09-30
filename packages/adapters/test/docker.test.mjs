@@ -205,3 +205,101 @@ test('cancelled or expired pinning does not start Docker inspection', async () =
   assert.equal(await worker.pin(0, input().signal), null);
   assert.equal(calls.length, 0);
 });
+
+test('memory failures have a sanitized code and still confirm cleanup', async () => {
+  for (const memoryLimit of [true, false]) {
+    const { worker, calls } = fixture({
+      start: () => ({
+        ...success('private diagnostic must not escape'),
+        code: memoryLimit ? 133 : 137,
+        memoryLimit,
+      }),
+      inspect: () => success('true'),
+    });
+    const result = await worker.run(input());
+    assert.equal(result.errorCode, 'memory_limit');
+    assert.equal(result.output.length, 0);
+    assert.equal(
+      calls.some((c) => c.args[0] === 'inspect'),
+      !memoryLimit,
+    );
+    assert.deepEqual(
+      calls.slice(-2).map((c) => c.args[0]),
+      ['rm', 'ps'],
+    );
+  }
+});
+
+test('Node heap and finding limit follow the supervisor budget', async () => {
+  const calls = [];
+  const command = async (args) => {
+    calls.push(args);
+    return args[0] === 'image' ? success(`${image} fixture 1`) : success();
+  };
+  const worker = new DockerWorker('fixture', 'owner', command, undefined, {
+    version: 'fixture',
+    protocol: '1',
+    command: ['webcrack'],
+    maxBytes: 1024,
+    nodeHeap: true,
+  });
+  await worker.run({ ...input(), memoryBytes: 2 * 1024 ** 3, findingCount: 400 });
+  const create = calls.find((c) => c[0] === 'create');
+  assert.ok(create.includes('NODE_OPTIONS=--max-old-space-size=1433'));
+  assert.ok(create.includes('JSMINER_MAX_FINDINGS=400'));
+});
+
+test('cleanup diagnostics identify the failing stage without leaking Docker output', async () => {
+  for (const [overrides, stage, reason] of [
+    [
+      { ps: () => ({ ...success('private diagnostic'), code: 1 }) },
+      'cleanup_verify',
+      'command_failed',
+    ],
+    [{ ps: () => success('deadbeef1234') }, 'cleanup_verify', 'container_remaining'],
+    [
+      { create: () => ({ ...success(), fault: 'timeout' }) },
+      'cleanup_verify',
+      'creation_uncertain',
+    ],
+    [
+      {
+        rm: () => {
+          throw new Error('PRIVATE_DOCKER_DETAIL');
+        },
+      },
+      'cleanup_remove',
+      'unknown',
+    ],
+  ]) {
+    const { worker } = fixture(overrides);
+    await assert.rejects(worker.run(input()), (error) => {
+      assert.equal(error.stage, stage);
+      assert.equal(error.reason, reason);
+      assert.ok(!error.message.includes('PRIVATE_DOCKER_DETAIL'));
+      return true;
+    });
+    assert.equal(worker.healthy, false);
+  }
+  const { worker } = fixture({ ps: () => ({ ...success(), fault: 'timeout' }) });
+  await assert.rejects(worker.recover(1000), { stage: 'recovery_list', reason: 'timeout' });
+});
+
+test('a batch uses one container and retains complete frames after timeout with confirmed cleanup', async () => {
+  const line = `${JSON.stringify({ index: 0, output: Buffer.from('validated later').toString('base64'), error: null })}\n`;
+  const { worker, calls } = fixture({
+    start: () => ({ code: null, fault: 'timeout', output: Buffer.from(`${line}{"index":1`) }),
+  });
+  const result = await worker.runBatch({
+    ...input(),
+    contents: [Buffer.from('a'), Buffer.from('b')],
+  });
+  assert.equal(result.results[0].output.toString(), 'validated later');
+  assert.equal(result.terminal.errorCode, 'timeout');
+  assert.equal(calls.filter((c) => c.args[0] === 'create').length, 1);
+  assert.equal(calls.find((c) => c.args[0] === 'create').args.at(-1), '--batch');
+  assert.deepEqual(
+    calls.slice(-2).map((c) => c.args[0]),
+    ['rm', 'ps'],
+  );
+});

@@ -24,6 +24,7 @@ export interface ServiceConfig {
     analysis_ms: number;
     cleanup_ms: number;
     worker_memory_bytes: number;
+    finding_count: number;
     worker_cpus: number;
     worker_pids: number;
     artifact_bytes: number;

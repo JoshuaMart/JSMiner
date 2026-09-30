@@ -15,7 +15,7 @@ import {
   UniqueOperationNamesRule,
   validate,
 } from 'graphql';
-import { findingCollector } from './limits.mjs';
+import { findingCollector, findingLimit } from './limits.mjs';
 
 // These schema-independent rules only check the document's internal consistency.
 // No remote schema, field/type validation or introspection is involved.
@@ -37,14 +37,16 @@ export const parseJavaScript = (content) =>
   });
 export function extract(content, tool, references = []) {
   const collector = findingCollector();
+  const maxFindings = findingLimit();
   const findings = collector.findings,
     reasons = new Set();
   let partial = false,
     incomplete = false;
   const ast = parseJavaScript(content);
   const stack = [ast];
+  const tagged = new WeakSet();
   const add = (value, location) => {
-    if (findings.length >= 200 || !collector.add({ ...value, location: location() })) {
+    if (findings.length >= maxFindings || !collector.add({ ...value, location: location() })) {
       partial = true;
       reasons.add('finding_count');
     }
@@ -52,6 +54,12 @@ export function extract(content, tool, references = []) {
   while (stack.length) {
     const node = stack.pop();
     if (!node || typeof node !== 'object') continue;
+    if (
+      node.type === 'TaggedTemplateExpression' &&
+      node.tag.type === 'Identifier' &&
+      ['gql', 'graphql'].includes(node.tag.name)
+    )
+      tagged.add(node.quasi);
     let value,
       interpolated = false;
     if (node.type === 'StringLiteral') value = node.value;
@@ -69,9 +77,15 @@ export function extract(content, tool, references = []) {
         tool === 'graphql' &&
         /^(?:\s|#[^\n]*(?:\n|$))*(?:query\b|mutation\b|subscription\b|fragment\b|\{)/u.test(value)
       ) {
+        // Braces alone also occur in JSON, format strings and ordinary text.
+        // Only explicit GraphQL candidates make failed parsing an incomplete document.
+        let recognized =
+          tagged.has(node) ||
+          /^(?:\s|#[^\n]*(?:\n|$))*(?:query|mutation|subscription|fragment)\b/u.test(value);
         try {
           if (interpolated) throw new Error();
           const document = parse(value, { maxTokens: 50000 });
+          recognized = true;
           if (validate(schema, document, documentRules).length) throw new Error();
           const document_hash = `sha256:${createHash('sha256').update(print(document)).digest('hex')}`;
           const fragments = new Map(
@@ -128,8 +142,10 @@ export function extract(content, tool, references = []) {
             );
           }
         } catch {
-          partial = true;
-          incomplete = true;
+          if (recognized) {
+            partial = true;
+            incomplete = true;
+          }
         }
       }
       if (tool === 'domains' && !interpolated) {

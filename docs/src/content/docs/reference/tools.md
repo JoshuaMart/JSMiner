@@ -23,7 +23,9 @@ webcrack et Wakaru ont des capacités complémentaires et communes. Leur [encha�
 | `jsminer-jsluice:phase2` | Worker Go et jsluice | 3 |
 | `jsminer-offline:phase3` | Node.js et les cinq autres outils | 1 |
 
-Ces tags gardent leur nom historique. Le superviseur contrôle l’ID immuable, le protocole et la version ; une image absente ou incompatible produit `tool_unavailable`. La version composite Node est `webcrack2.16.0-wakaru1.12.0-trufflehog3.97.9-static2`.
+Ces tags gardent leur nom historique. Le superviseur contrôle l’ID immuable, le protocole et la version ; une image absente ou incompatible produit `tool_unavailable`. La version composite Node est `webcrack2.16.0-wakaru1.12.0-trufflehog3.97.9-static4`.
+
+Le worker jsluice utilise la grammaire de `go-tree-sitter` au commit `dd81d9e9be82` (août 2024), avec des tests de syntaxe modernes. Son identifiant de build inclut cette version du parseur.
 
 Les dépendances sont verrouillées par `package-lock.json` côté Node et `go.mod`/`go.sum` côté Go ; les archives TruffleHog sont vérifiées par SHA-256. Une reconstruction change l’identité de cache correspondante.
 

@@ -5,7 +5,12 @@ function loss(response: AnalyzeResponse, reason: AnalyzeResponse['truncation']['
   if (!response.truncation.reasons.includes(reason)) response.truncation.reasons.push(reason);
 }
 /** Bounded accumulation, including evidence retained across representations and detectors. */
-export function merge(response: AnalyzeResponse, category: Category, values: Observation[]) {
+export function merge(
+  response: AnalyzeResponse,
+  category: Category,
+  values: Observation[],
+  maxFindings = 200,
+) {
   const existing = response[category] as Observation[];
   for (const value of values) {
     const found = existing.find((item) => item.id === value.id);
@@ -28,7 +33,7 @@ export function merge(response: AnalyzeResponse, category: Category, values: Obs
         (found as Secret).rule_id =
           [(found as Secret).rule_id, (value as Secret).rule_id].sort()[0] ??
           (found as Secret).rule_id;
-    } else if (existing.length < 200) existing.push(value);
+    } else if (existing.length < maxFindings) existing.push(value);
     else loss(response, 'finding_count');
   }
   existing.sort((a, b) => a.id.localeCompare(b.id));
@@ -38,6 +43,7 @@ export function finalize(
   sensitive: string[],
   incomplete: boolean,
   mac: (v: string) => string,
+  maxFindings = 200,
 ) {
   if (incomplete) {
     response.endpoints = [];
@@ -90,7 +96,7 @@ export function finalize(
     e.id = `end_${mac(JSON.stringify([e.value, e.resolved_url, e.method, e.kind, e.dynamic, e.query_params, e.body_params]))}`;
     return true;
   });
-  merge(response, 'endpoints', bounded);
+  merge(response, 'endpoints', bounded, maxFindings);
   // A secret can appear in a GraphQL identifier or hostname: omit instead of fabricating syntax.
   for (const category of ['gql_operations', 'subdomains'] as const) {
     const safe = response[category].filter((value) => {

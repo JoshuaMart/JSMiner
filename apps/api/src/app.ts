@@ -121,7 +121,9 @@ export function buildApp(configuration: unknown, options: EngineOptions = {}) {
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ServiceError) {
       if (error.status === 429) reply.header('Retry-After', '1');
-      return reply.code(error.status).send(errorBody(request.id, error.code, 'Requête refusée.'));
+      return reply
+        .code(error.status)
+        .send(errorBody(request.id, error.code, error.publicMessage ?? 'Requête refusée.'));
     }
     const fault = error as { code?: string; statusCode?: number };
     if (fault.code === 'invalid_utf8')

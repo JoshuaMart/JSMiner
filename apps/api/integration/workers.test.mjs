@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { DockerWorker, dockerCommand } from '@jsminer/adapters';
+import { DockerWorker, dockerCommand, JSLUICE_VERSION } from '@jsminer/adapters';
 import { validateContract } from '@jsminer/contracts';
 import { buildApp } from '../dist/app.js';
 
@@ -117,7 +117,14 @@ test('real containers enforce isolation and leave no worker after failure, timeo
   const image = `jsminer-lifecycle-fixture:${suffix}`;
   const owner = `fixture-${suffix}`;
   const directory = fileURLToPath(new URL('./fixture-worker', import.meta.url));
-  await docker('build', '-t', image, directory);
+  await docker(
+    'build',
+    '--build-arg',
+    `JSLUICE_VERSION=${JSLUICE_VERSION}`,
+    '-t',
+    image,
+    directory,
+  );
   t.after(async () => {
     const ids = (await docker('ps', '-aq', '--filter', `label=io.jsminer.owner=${owner}`)).stdout
       .trim()
@@ -126,6 +133,28 @@ test('real containers enforce isolation and leave no worker after failure, timeo
     if (ids.length) await docker('rm', '--force', ...ids);
     await docker('image', 'rm', image);
   });
+  const batchWorker = new DockerWorker(image, owner, undefined, undefined, {
+    version: JSLUICE_VERSION,
+    protocol: '3',
+    command: ['batch-timeout'],
+    maxBytes: 1024,
+  });
+  const batch = await batchWorker.runBatch({
+    contents: [Buffer.from('first'), Buffer.from('second')],
+    timeoutMs: 1500,
+    cleanupMs: 10000,
+    memoryBytes: 128 * 1024 * 1024,
+    cpus: 1,
+    pids: 32,
+    signal: new AbortController().signal,
+  });
+  assert.equal(batch.terminal.errorCode, 'timeout');
+  assert.equal(batch.results.length, 1);
+  assert.equal(batch.results[0].output.toString(), 'ok');
+  assert.equal(
+    (await docker('ps', '-aq', '--filter', `label=io.jsminer.owner=${owner}`)).stdout.trim(),
+    '',
+  );
   for (const scenario of ['error', 'output', 'timeout', 'abort']) {
     const controller = new AbortController();
     let checked = false;
@@ -217,5 +246,27 @@ test('HTTP disconnect and service close abort a running worker before shutdown r
     await finished;
     await request;
     if (action === 'disconnect') await app.close();
+  }
+});
+
+test('updated jsluice grammar accepts modern syntax and worker finding caps are configurable', async (t) => {
+  const content =
+    'const n = x?.5:0; const {a:b=()=>{},c:d=1} = x; class A { #x = 1; static {this.x=2;} has(o) {return #x in o;} }' +
+    Array.from({ length: 230 }, (_, i) => `fetch('/fixture/${i}');`).join('\n');
+  for (const limit of [3, 1000]) {
+    const app = buildApp({ ...configuration, budgets: { finding_count: limit } });
+    t.after(() => app.close());
+    const response = await app.inject({
+      method: 'POST',
+      url: '/analyze',
+      headers,
+      payload: { content, tools: ['jsluice'] },
+    });
+    assert.equal(response.statusCode, 200, response.body);
+    const result = response.json();
+    assert.equal(result.status, limit < 230 ? 'partial' : 'complete', response.body);
+    if (limit === 1000) assert.equal(result.endpoints.length, 230);
+    else assert.ok(result.endpoints.length > 0 && result.endpoints.length <= limit);
+    assert.notEqual(result.tools[0].error_code, 'syntax_incomplete');
   }
 });

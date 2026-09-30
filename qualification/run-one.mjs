@@ -46,6 +46,7 @@ const workers = Object.fromEntries(
           {
             version: OFFLINE_VERSION,
             protocol: '1',
+            nodeHeap: true,
             command: [name],
             maxBytes: ['webcrack', 'wakaru'].includes(name) ? 96 * 1024 * 1024 : 2 * 1024 * 1024,
             tmpfsBytes: 128 * 1024 * 1024,

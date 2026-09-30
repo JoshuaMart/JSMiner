@@ -1,21 +1,15 @@
 import { spawnSync } from 'node:child_process';
 import { lstatSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { runBatch } from './batch.mjs';
 import { findingCollector } from './limits.mjs';
 import { extract, parseJavaScript } from './static.mjs';
+import { trufflehogBatch } from './trufflehog-batch.mjs';
 
 // The container supervisor owns the deadline and kills the entire container.
 const tool = process.argv[2];
 const MAX_INPUT = 64 * 1024 * 1024;
-try {
-  const chunks = [];
-  let size = 0;
-  for await (const chunk of process.stdin) {
-    size += chunk.length;
-    if (size > MAX_INPUT) throw new Error();
-    chunks.push(chunk);
-  }
-  const input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)));
+async function analyze(input) {
   const { content } = input;
   if (typeof content !== 'string' || Buffer.byteLength(content) > 64 * 1024 * 1024)
     throw new Error();
@@ -66,34 +60,39 @@ try {
     const cli = '/worker/node_modules/.bin/wakaru';
     run(cli, ['/tmp/input.js', '--level', 'standard', '-o', '/tmp/bundle.js']);
     module('bundle.js', readFileSync('/tmp/bundle.js', 'utf8'));
-    run(cli, ['/tmp/input.js', '--unpack', '--level', 'standard', '-o', '/tmp/modules']);
-    const directories = ['/tmp/modules'];
-    let index = 0,
-      visited = 0;
-    while (directories.length) {
-      const directory = directories.pop();
-      for (const name of readdirSync(directory).sort()) {
-        if (++visited > 10000) {
-          reasons.add('module_count');
-          directories.length = 0;
-          break;
-        }
-        const file = join(directory, name),
-          stat = lstatSync(file);
-        if (stat.isSymbolicLink()) throw new Error();
-        if (stat.isDirectory()) directories.push(file);
-        else if (!stat.isFile()) throw new Error();
-        else if (/\.(?:js|jsx|mjs|cjs)$/.test(name)) {
-          if (stat.size > maxBytes - bytes) {
-            reasons.add('artifact_bytes');
-            continue;
+    try {
+      run(cli, ['/tmp/input.js', '--unpack', '--level', 'standard', '-o', '/tmp/modules']);
+      const directories = ['/tmp/modules'];
+      let index = 0,
+        visited = 0;
+      while (directories.length) {
+        const directory = directories.pop();
+        for (const name of readdirSync(directory).sort()) {
+          if (++visited > 10000) {
+            reasons.add('module_count');
+            directories.length = 0;
+            break;
           }
-          module(
-            `modules/m${index++}.js`,
-            new TextDecoder('utf-8', { fatal: true }).decode(readFileSync(file)),
-          );
+          const file = join(directory, name),
+            stat = lstatSync(file);
+          if (stat.isSymbolicLink()) throw new Error();
+          if (stat.isDirectory()) directories.push(file);
+          else if (!stat.isFile()) throw new Error();
+          else if (/\.(?:js|jsx|mjs|cjs)$/.test(name)) {
+            if (stat.size > maxBytes - bytes) {
+              reasons.add('artifact_bytes');
+              continue;
+            }
+            module(
+              `modules/m${index++}.js`,
+              new TextDecoder('utf-8', { fatal: true }).decode(readFileSync(file)),
+            );
+          }
         }
       }
+    } catch {
+      result.partial = true;
+      result.error_code = 'unpack_failed';
     }
   } else if (tool === 'trufflehog') {
     mkdirSync('/tmp/source');
@@ -132,8 +131,27 @@ try {
     result.partial = true;
     result.error_code ??= 'output_truncated';
   }
-  process.stdout.write(JSON.stringify(result));
+  return result;
+}
+try {
+  if (process.argv[3] === '--batch') {
+    if (tool === 'trufflehog') await trufflehogBatch();
+    else if (tool === 'graphql' || tool === 'domains') await runBatch(analyze);
+    else throw new Error();
+  } else {
+    const chunks = [];
+    let size = 0;
+    for await (const chunk of process.stdin) {
+      size += chunk.length;
+      if (size > MAX_INPUT) throw new Error();
+      chunks.push(chunk);
+    }
+    const input = JSON.parse(
+      new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)),
+    );
+    process.stdout.write(JSON.stringify(await analyze(input)));
+  }
 } catch {
-  // No upstream diagnostics/source/context is allowed onto stderr.
+  // Never expose source or upstream diagnostics.
   process.exitCode = 2;
 }

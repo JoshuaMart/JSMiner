@@ -341,9 +341,11 @@ test('cache invalidates on input, immutable runtime/options identity, budgets an
   await analyze(engine);
   config.budgets.tool_ms.jsluice--;
   await analyze(engine);
+  config.budgets.finding_count++;
+  assert.equal((await analyze(engine)).cache.status, 'miss');
   const other = await analyze(engine, {}, 'other');
   assert.equal(other.cache.status, 'miss');
-  assert.equal(w.calls, 6);
+  assert.equal(w.calls, 7);
   assert.notEqual(other.endpoints[0].id, (await analyze(engine)).endpoints[0].id);
 });
 

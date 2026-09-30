@@ -28,7 +28,7 @@ docker image inspect jsminer-jsluice:phase2 jsminer-offline:phase3
 | `429 storage_full` | Purger les expirés et vérifier le quota ; les handles actifs sont conservés |
 | `tool_unavailable` | Vérifier les images et reconstruire avec `pnpm worker:build` |
 | `capture_*` | Vérifier statut, compression et disponibilité de la ressource autorisée |
-| `worker_cleanup_unconfirmed` | Résoudre le problème Docker puis redémarrer avec le même stockage pour récupérer les conteneurs orphelins |
+| `worker_cleanup_unconfirmed` | Le message précise l’étape (`recovery_*` au premier contrôle, `cleanup_*` après un worker) et le motif : `timeout`, `spawn_error`, `command_failed`, `container_remaining` ou `creation_uncertain`. Résoudre le problème Docker puis redémarrer avec le même stockage |
 | Erreur de stockage | Vérifier droits, espace disque et SQLite/WAL |
 
 Les erreurs HTTP contiennent un `request_id`. Pour une réponse d’analyse, consultez `tools`, `coverage` et `truncation`. La [référence API](/reference/api/#erreurs-http) décrit les codes.

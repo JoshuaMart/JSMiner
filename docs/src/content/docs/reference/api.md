@@ -144,13 +144,15 @@ Les formats de chaque observation et de ses preuves sont définis dans le [modè
 
 Chaque outil demandé a une entrée, même s’il n’a pas démarré. Un traitement en cache garde `success` ; sa durée exclut la lecture et la vérification du cache. Une réutilisation partielle des modules peut rester comptée comme `miss` pour cet outil.
 
+`memory_limit` signale un épuisement mémoire identifié. `unpack_failed` indique que Wakaru a conservé son bundle transformé, mais que le dépliage n’a pas abouti ; les extracteurs peuvent utiliser ce bundle.
+
 Une extraction vide réussie est `complete`, sans garantie d’exhaustivité. L’échec d’une transformation rend au plus `partial` la couverture des catégories extraites. Avec deux détecteurs de secrets, un échec et une réussite donnent `coverage.secrets: partial` ; deux échecs sans résultat donnent `failed`.
 
 Les trois statuts globaux utilisent HTTP `200` avec un handle si les artefacts ont pu être publiés. Les échecs d’acquisition ou d’infrastructure utilisent les erreurs HTTP ci-dessous.
 
 ### Réponse bornée
 
-Plafonds : **256 Kio** sérialisés, **200 observations par catégorie**, **5 preuves par observation**, **32 avertissements** et **2 048 octets par champ de découverte**. Un champ trop long est omis, pas raccourci.
+Plafonds : **256 Kio** sérialisés, **200 observations par catégorie par défaut** (paramètre serveur `budgets.finding_count`, de 1 à 2 000), **5 preuves par observation**, **32 avertissements** et **2 048 octets par champ de découverte**. Un champ trop long est omis, pas raccourci.
 
 Les résultats sont triés par confiance décroissante puis identifiant stable, et les catégories sont remplies par tours. Une perte rend la réponse et la couverture concernée `partial`, avec `truncation.truncated: true` et un motif : `response_bytes`, `finding_count`, `evidence_count`, `artifact_bytes`, `module_count` ou `field_bytes`.
 

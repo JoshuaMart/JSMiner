@@ -66,6 +66,7 @@ export class AnalysisEngine {
                       {
                         version: OFFLINE_VERSION,
                         protocol: '1',
+                        nodeHeap: true,
                         command: [name],
                         maxBytes: ['webcrack', 'wakaru'].includes(name)
                           ? 96 * 1024 * 1024
@@ -201,6 +202,7 @@ export class AnalysisEngine {
         response.truncation.reasons = [...new Set([...response.truncation.reasons, ...values])];
       };
       type StepResult = WorkerResult & { cacheKey?: string; cacheHit?: boolean };
+      type QueuedStep = { index: number; worker: Worker; content: Buffer; cacheKey?: string };
       const pinned = new Map<ToolName, { identity: string; worker: Worker } | null>();
       const lineage = new Map<string, string>([['original/bundle.js', 'original']]);
       const run = async (
@@ -208,6 +210,8 @@ export class AnalysisEngine {
         content: Buffer,
         end: number,
         path: string,
+        queue?: QueuedStep[],
+        index = 0,
       ): Promise<StepResult> => {
         if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
         const timeout = Math.min(end, deadline) - performance.now();
@@ -241,7 +245,7 @@ export class AnalysisEngine {
                 project,
                 JSON.stringify([
                   'step-cache-v1',
-                  'normalization-v4',
+                  'normalization-v5',
                   tool.name,
                   runtime.identity,
                   sha256(content),
@@ -249,6 +253,7 @@ export class AnalysisEngine {
                   budget.tool_ms[tool.name],
                   budget.analysis_ms,
                   budget.worker_memory_bytes,
+                  budget.finding_count,
                   budget.worker_cpus,
                   budget.worker_pids,
                   budget.artifact_bytes,
@@ -276,11 +281,22 @@ export class AnalysisEngine {
               cacheHit: true,
             };
           worker = runtime?.worker ?? worker;
+          if (queue && worker.runBatch) {
+            queue.push({ index, worker, content, ...(cacheKey ? { cacheKey } : {}) });
+            return {
+              status: 'skipped',
+              version: null,
+              durationMs: 0,
+              errorCode: 'batch_pending',
+              output: Buffer.alloc(0),
+            };
+          }
           const result = await worker.run({
             content,
             timeoutMs: Math.max(1, Math.min(end, deadline) - performance.now()),
             cleanupMs: budget.cleanup_ms,
             memoryBytes: budget.worker_memory_bytes,
+            findingCount: budget.finding_count,
             cpus: budget.worker_cpus,
             pids: budget.worker_pids,
             signal,
@@ -292,7 +308,8 @@ export class AnalysisEngine {
           };
         } catch (error) {
           if (error instanceof ServiceError) throw error;
-          if (error instanceof CleanupError || !worker.healthy) throw new CleanupError();
+          if (error instanceof CleanupError) throw error;
+          if (!worker.healthy) throw new CleanupError();
           // The Docker adapter only throws an ordinary error after any attempted
           // container has been cleaned up. Never expose the upstream error text.
           return {
@@ -353,7 +370,7 @@ export class AnalysisEngine {
         if (result.status === 'success') {
           let output: ReturnType<typeof parseOutput>, files: ReturnType<typeof decodeModules>;
           try {
-            output = parseOutput(result.output, true);
+            output = parseOutput(result.output, true, budget.finding_count);
             files = decodeModules(output);
           } catch {
             tool.status = 'error';
@@ -365,7 +382,7 @@ export class AnalysisEngine {
           reasons([...output.reasons, ...losses]);
           if (output.partial || losses.length) {
             tool.status = 'partial';
-            tool.error_code = 'output_truncated';
+            tool.error_code = output.error_code ?? 'output_truncated';
           } else if (!files.some((file) => file.path === 'bundle.js')) {
             tool.status = 'error';
             tool.error_code = 'missing_aggregate';
@@ -387,13 +404,86 @@ export class AnalysisEngine {
         tool.modules_available = current.sources.length;
         const end = performance.now() + budget.tool_ms[name];
         let allCached = true;
-        for (const source of current.sources) {
-          const result = await run(
-            tool,
-            name === 'jsluice' ? source.bytes : envelope(source.bytes, name),
-            end,
-            source.module.path,
-          );
+        let scheduled: StepResult[] | undefined;
+        let terminal: WorkerResult | null = null;
+        if (this.workers[name]?.runBatch) {
+          const queue: QueuedStep[] = [];
+          scheduled = [];
+          for (const [index, source] of current.sources.entries())
+            scheduled.push(
+              await run(
+                tool,
+                name === 'jsluice' ? source.bytes : envelope(source.bytes, name),
+                end,
+                source.module.path,
+                queue,
+                index,
+              ),
+            );
+          if (queue.length) {
+            const started = performance.now();
+            try {
+              if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
+              const remaining = Math.min(end, deadline) - performance.now();
+              if (remaining <= 0) {
+                terminal = {
+                  status: 'skipped',
+                  version: null,
+                  durationMs: 0,
+                  errorCode: deadline <= performance.now() ? 'global_deadline' : 'tool_deadline',
+                  output: Buffer.alloc(0),
+                };
+              } else {
+                const worker = queue[0]?.worker;
+                if (!worker?.runBatch) throw new Error('Missing batch worker.');
+                const batch = await worker.runBatch({
+                  contents: queue.map((item) => item.content),
+                  timeoutMs: remaining,
+                  cleanupMs: budget.cleanup_ms,
+                  memoryBytes: budget.worker_memory_bytes,
+                  findingCount: budget.finding_count,
+                  cpus: budget.worker_cpus,
+                  pids: budget.worker_pids,
+                  signal,
+                });
+                for (const [index, item] of queue.entries()) {
+                  const result = batch.results[index];
+                  if (result)
+                    scheduled[item.index] = {
+                      ...result,
+                      ...(item.cacheKey ? { cacheKey: item.cacheKey } : {}),
+                    };
+                }
+                terminal = batch.terminal;
+              }
+            } catch (error) {
+              if (error instanceof ServiceError || error instanceof CleanupError) throw error;
+              if (!queue[0]?.worker.healthy) throw new CleanupError();
+              terminal = {
+                status: 'error',
+                version: null,
+                durationMs: 0,
+                errorCode: 'worker_failed',
+                output: Buffer.alloc(0),
+              };
+            }
+            tool.duration_ms += Math.ceil(performance.now() - started);
+          }
+        }
+        for (const [index, source] of current.sources.entries()) {
+          if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
+          const result =
+            scheduled?.[index] ??
+            (await run(
+              tool,
+              name === 'jsluice' ? source.bytes : envelope(source.bytes, name),
+              end,
+              source.module.path,
+            ));
+          if (result.errorCode === 'batch_pending') {
+            allCached = false;
+            continue;
+          }
           allCached &&= result.cacheHit === true;
           tool.duration_ms += result.durationMs;
           tool.version ??= result.version;
@@ -401,7 +491,7 @@ export class AnalysisEngine {
             tool.status = result.status;
             tool.error_code = result.errorCode;
             // Exhausted budgets and unavailable images cannot improve for a subsequent module.
-            if (['timeout', 'skipped'].includes(result.status)) break;
+            if (!scheduled && ['timeout', 'skipped'].includes(result.status)) break;
             continue;
           }
           try {
@@ -411,6 +501,7 @@ export class AnalysisEngine {
                 (v) => this.store.mac(project, v),
                 request.base_url,
                 request.redact_query_values,
+                budget.finding_count,
               );
               for (const value of [...normalized.endpoints, ...normalized.secrets])
                 for (const e of value.evidence) {
@@ -423,11 +514,17 @@ export class AnalysisEngine {
                 response,
                 'endpoints',
                 normalized.endpoints.filter(keepConfidence).filter(keepEndpoint),
+                budget.finding_count,
               );
-              merge(response, 'secrets', normalized.secrets.filter(keepConfidence));
+              merge(
+                response,
+                'secrets',
+                normalized.secrets.filter(keepConfidence),
+                budget.finding_count,
+              );
               reasons(normalized.reasons);
               if (!normalized.partial) remember(result);
-              if (normalized.partial) {
+              if (normalized.partial && !['error', 'timeout'].includes(tool.status)) {
                 tool.status = 'partial';
                 tool.error_code = normalized.syntaxError ? 'syntax_incomplete' : 'output_truncated';
               } else if (tool.error_code === 'tool_unavailable') {
@@ -435,7 +532,7 @@ export class AnalysisEngine {
                 tool.error_code = null;
               }
             } else {
-              const output = parseOutput(result.output, false);
+              const output = parseOutput(result.output, false, budget.finding_count);
               const normalized = normalizeOffline(output, name, source.module, (v) =>
                 this.store.mac(project, v),
               );
@@ -450,14 +547,31 @@ export class AnalysisEngine {
                 throw new Error('Invalid domain.');
               addSensitive(normalized.sensitive);
               if (name === 'trufflehog' && output.partial) redactIncomplete = true;
-              merge(response, 'secrets', normalized.secrets.filter(keepConfidence));
-              merge(response, 'gql_operations', normalized.gql_operations.filter(keepConfidence));
-              merge(response, 'subdomains', normalized.subdomains.filter(keepConfidence));
+              merge(
+                response,
+                'secrets',
+                normalized.secrets.filter(keepConfidence),
+                budget.finding_count,
+              );
+              merge(
+                response,
+                'gql_operations',
+                normalized.gql_operations.filter(keepConfidence),
+                budget.finding_count,
+              );
+              merge(
+                response,
+                'subdomains',
+                normalized.subdomains.filter(keepConfidence),
+                budget.finding_count,
+              );
               reasons(output.reasons);
               if (!output.partial) remember(result);
               if (output.partial) {
-                tool.status = 'partial';
-                tool.error_code = output.error_code;
+                if (!['error', 'timeout'].includes(tool.status)) {
+                  tool.status = 'partial';
+                  tool.error_code = output.error_code;
+                }
                 if (
                   output.error_code === 'incomplete_document' &&
                   !response.warnings.some(
@@ -477,6 +591,12 @@ export class AnalysisEngine {
             tool.error_code = 'invalid_worker_output';
           }
         }
+        if (terminal) {
+          tool.status = terminal.status;
+          tool.error_code = terminal.errorCode;
+          tool.version ??= terminal.version;
+          allCached = false;
+        }
         tool.cache_hit = allCached && tool.status === 'success';
         // A failed module never cancels findings from completed modules.
         if (tool.status === 'success' && tool.modules_analyzed !== tool.modules_available) {
@@ -484,7 +604,13 @@ export class AnalysisEngine {
           tool.error_code = 'incomplete_modules';
         }
       }
-      finalize(response, [...sensitive], redactIncomplete, (v) => this.store.mac(project, v));
+      finalize(
+        response,
+        [...sensitive],
+        redactIncomplete,
+        (v) => this.store.mac(project, v),
+        budget.finding_count,
+      );
       response.endpoints = response.endpoints.filter(keepEndpoint);
       if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
       if (performance.now() >= deadline) {
@@ -521,7 +647,11 @@ export class AnalysisEngine {
         this.blocked = true;
       if (error instanceof CleanupError) {
         this.blocked = true;
-        throw new ServiceError(503, 'worker_cleanup_unconfirmed');
+        throw new ServiceError(
+          503,
+          'worker_cleanup_unconfirmed',
+          `Contrôle Docker non confirmé (${error.stage}: ${error.reason}). L’instance doit être redémarrée après résolution du problème.`,
+        );
       }
       throw error;
     } finally {

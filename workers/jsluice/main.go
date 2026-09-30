@@ -2,16 +2,20 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"github.com/BishopFox/jsluice"
 	"io"
 	"os"
+	"runtime"
+	"strconv"
 
 	sitter "github.com/smacker/go-tree-sitter"
 	"github.com/smacker/go-tree-sitter/javascript"
 )
 
-const version = "0ddfab153e060a9eeaded4d8669233f7c071e7e4"
+const version = "0ddfab153e060a9eeaded4d8669233f7c071e7e4-treesitterdd81d9e9be82-v5"
 const outputLimit = 2 << 20
 
 func hasSyntaxError(source []byte) bool {
@@ -24,16 +28,24 @@ func hasSyntaxError(source []byte) bool {
 	return tree.RootNode().HasError()
 }
 
-func main() {
-	// Never print a panic or parser context containing source text.
+func analyze(source []byte) (output []byte, err error) {
 	defer func() {
 		if recover() != nil {
-			os.Exit(2)
+			output = nil
+			err = errors.New("analysis failed")
 		}
 	}()
-	source, err := io.ReadAll(io.LimitReader(os.Stdin, (10<<20)+1))
-	if err != nil || len(source) > 10<<20 {
-		os.Exit(2)
+	if len(source) > 10<<20 {
+		return nil, errors.New("input limit")
+	}
+	var buffer bytes.Buffer
+	maxFindings := 200
+	if value := os.Getenv("JSMINER_MAX_FINDINGS"); value != "" {
+		limit, err := strconv.Atoi(value)
+		if err != nil || limit < 1 || limit > 2000 {
+			panic("analysis failed")
+		}
+		maxFindings = limit
 	}
 	syntaxError := hasSyntaxError(source)
 	analyzer := jsluice.NewAnalyzer(source)
@@ -42,21 +54,21 @@ func main() {
 	emit := func(value any) bool {
 		data, err := json.Marshal(value)
 		if err != nil {
-			os.Exit(2)
+			panic("analysis failed")
 		}
 		if total+len(data)+1 > outputLimit-1024 {
 			truncated = true
 			return false
 		}
-		if _, err = os.Stdout.Write(append(data, '\n')); err != nil {
-			os.Exit(2)
+		if _, err = buffer.Write(append(data, '\n')); err != nil {
+			panic("analysis failed")
 		}
 		total += len(data) + 1
 		return true
 	}
 	// Secrets precede endpoints, so the API can redact their values before publication.
 	for _, secret := range analyzer.GetSecrets() {
-		if count >= 200 {
+		if count >= maxFindings {
 			truncated = true
 			break
 		}
@@ -66,15 +78,15 @@ func main() {
 		if secret.Kind == "firebase" {
 			encoded, err := json.Marshal(secret.Data)
 			if err != nil {
-				os.Exit(2)
+				panic("analysis failed")
 			}
 			var object map[string]any
 			if json.Unmarshal(encoded, &object) != nil {
-				os.Exit(2)
+				panic("analysis failed")
 			}
 			key, ok := object["apiKey"].(string)
 			if !ok {
-				os.Exit(2)
+				panic("analysis failed")
 			}
 			data = map[string]string{"key": key}
 		}
@@ -86,7 +98,7 @@ func main() {
 	secretsTruncated := truncated
 	count = 0
 	for _, endpoint := range analyzer.GetURLs() {
-		if count >= 200 {
+		if count >= maxFindings {
 			truncated = true
 			break
 		}
@@ -96,4 +108,69 @@ func main() {
 		count++
 	}
 	emit(map[string]any{"type": "done", "version": version, "truncated": truncated, "secrets_truncated": secretsTruncated, "syntax_error": syntaxError})
+
+	return buffer.Bytes(), nil
+}
+
+func batch(input io.Reader, output io.Writer) error {
+	decoder := json.NewDecoder(io.LimitReader(input, (128<<20)+1))
+	decoder.DisallowUnknownFields()
+	encoder := json.NewEncoder(output)
+	total := 0
+	for index := 0; ; index++ {
+		var item struct {
+			Index *int   `json:"index"`
+			Input []byte `json:"input"`
+		}
+		err := decoder.Decode(&item)
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil || item.Index == nil || *item.Index != index || index >= 2000 || decoder.InputOffset() > 128<<20 || item.Input == nil {
+			return errors.New("invalid batch")
+		}
+		data, err := analyze(item.Input)
+		var failure *string
+		if err != nil {
+			code := "worker_failed"
+			failure = &code
+		}
+		if err := encoder.Encode(struct {
+			Index  int     `json:"index"`
+			Output []byte  `json:"output"`
+			Error  *string `json:"error"`
+		}{index, data, failure}); err != nil {
+			return err
+		}
+		// Native tree-sitter allocations are not accounted for by the Go heap trigger.
+		total += len(item.Input)
+		if index%16 == 15 || total >= 1<<20 {
+			runtime.GC()
+			total = 0
+		}
+	}
+}
+func main() {
+	defer func() {
+		if recover() != nil {
+			os.Exit(2)
+		}
+	}()
+	if len(os.Args) == 2 && os.Args[1] == "--batch" {
+		if batch(os.Stdin, os.Stdout) != nil {
+			os.Exit(2)
+		}
+		return
+	}
+	source, err := io.ReadAll(io.LimitReader(os.Stdin, (10<<20)+1))
+	if err != nil {
+		os.Exit(2)
+	}
+	output, err := analyze(source)
+	if err != nil {
+		os.Exit(2)
+	}
+	if _, err = os.Stdout.Write(output); err != nil {
+		os.Exit(2)
+	}
 }

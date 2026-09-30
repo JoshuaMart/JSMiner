@@ -65,11 +65,12 @@ export function normalize(
   mac: (value: string) => string,
   base?: string,
   redactQueryValues = false,
+  maxFindings = 200,
 ) {
   if (output.length > 2 * 1024 * 1024) throw new Error('Invalid worker output.');
   const text = new TextDecoder('utf-8', { fatal: true }).decode(output);
   const lines = text.trimEnd().split('\n');
-  if (lines.length > 401) throw new Error('Invalid worker output.');
+  if (lines.length > maxFindings * 2 + 1) throw new Error('Invalid worker output.');
   const records = lines.map((line) => {
     const value: unknown = JSON.parse(line);
     if (!validate(value)) throw new Error('Invalid worker output.');
@@ -80,8 +81,8 @@ export function normalize(
     throw new Error('Incomplete worker output.');
   if (
     (done.secrets_truncated && !done.truncated) ||
-    records.filter((r) => r.type === 'secret').length > 200 ||
-    records.filter((r) => r.type === 'endpoint').length > 200
+    records.filter((r) => r.type === 'secret').length > maxFindings ||
+    records.filter((r) => r.type === 'endpoint').length > maxFindings
   )
     throw new Error('Invalid worker output.');
   const reasons = new Set<AnalyzeResponse['truncation']['reasons'][number]>();
