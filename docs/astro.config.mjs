@@ -6,19 +6,39 @@ import starlight from '@astrojs/starlight';
 export default defineConfig({
 	integrations: [
 		starlight({
-			title: 'My Docs',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+			title: 'JSMiner',
+			defaultLocale: 'root',
+			locales: { root: { label: 'Français', lang: 'fr' } },
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/JoshuaMart/JSMiner' }],
 			sidebar: [
+				{ label: 'Accueil', slug: 'index' },
 				{
-					label: 'Guides',
+					label: 'Le projet',
 					items: [
-						// Each item here is one entry in the navigation menu.
-						{ label: 'Example Guide', slug: 'guides/example' },
+						{ label: 'Vision et périmètre', slug: 'guides/vision' },
+						{ label: 'Feuille de route', slug: 'guides/roadmap' },
 					],
 				},
 				{
-					label: 'Reference',
-					items: [{ autogenerate: { directory: 'reference' } }],
+					label: 'Architecture',
+					items: [
+						{ label: 'Pipeline et isolation', slug: 'architecture/pipeline' },
+						{ label: 'Cache et sources', slug: 'architecture/storage' },
+					],
+				},
+				{
+					label: 'Référence',
+					items: [
+						{ label: 'Contrat API', slug: 'reference/api' },
+						{ label: 'Modèle de résultats', slug: 'reference/results' },
+					],
+				},
+				{
+					label: 'Étude préalable',
+					items: [
+						{ label: 'Outils et inspirations', slug: 'research/tools' },
+						{ label: 'Retour sur le prototype', slug: 'research/prototype' },
+					],
 				},
 			],
 		}),

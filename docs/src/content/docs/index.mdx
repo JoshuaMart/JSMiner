@@ -1,40 +1,41 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
+title: JSMiner
+description: Conception d’un service d’analyse de JavaScript avec résultats structurés et consultation ciblée des sources.
 hero:
-  tagline: Congrats on setting up a new Starlight project!
-  image:
-    file: ../../assets/houston.webp
+  tagline: Analyser un bundle. Extraire les informations utiles. Consulter uniquement les modules nécessaires.
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Comprendre le projet
+      link: /guides/vision/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
-      icon: external
-      variant: minimal
+    - text: Lire le contrat API
+      link: /reference/api/
+      variant: secondary
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Next steps
+JSMiner doit transformer un script fourni ou acquis dans un périmètre autorisé en un inventaire compact : endpoints, secrets potentiels, opérations GraphQL et sous-domaines observés. Les sources restent dans un stockage dédié, consultable module par module grâce à un `handle` opaque.
 
-<CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
-	</Card>
-	<Card title="Change page layout" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a
-		sidebar on this page.
-	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
-	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
+<CardGrid>
+  <Card title="Un contrat compact" icon="document">
+    `POST /analyze` retourne des résultats structurés et leur provenance. Aucun code source n’est inclus dans cette réponse.
+  </Card>
+  <Card title="Des traitements indépendants" icon="setting">
+    Chaque outil dispose de son budget. Une transformation qui échoue laisse les résultats des autres traitements disponibles.
+  </Card>
+  <Card title="Des sources à la demande" icon="open-book">
+    Le manifeste liste les modules ; une seconde requête lit un module ou une portion bornée de celui-ci.
+  </Card>
+  <Card title="Un cache reproductible" icon="puzzle">
+    Le hash du script identifie les octets. Les versions, options et artefacts d’entrée identifient l’analyse.
+  </Card>
 </CardGrid>
+
+## Parcours de lecture
+
+1. [Vision et périmètre](/guides/vision/) : objectifs et limites du produit.
+2. [Pipeline et isolation](/architecture/pipeline/) : TypeScript, runtimes, étapes, budgets et erreurs.
+3. [Contrat API](/reference/api/) et [modèle de résultats](/reference/results/) : échanges et sémantique.
+4. [Cache et sources](/architecture/storage/) : identité, rétention et lecture ciblée.
+5. [Étude des outils](/research/tools/) et [retour sur le prototype](/research/prototype/) : inspirations et limites.
+6. [Feuille de route](/guides/roadmap/) : incréments et critères de validation.

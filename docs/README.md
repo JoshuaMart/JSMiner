@@ -1,49 +1,24 @@
-# Starlight Starter Kit: Basics
+# Documentation JSMiner
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+Site Astro/Starlight en français. Les pages décrivent une architecture proposée ; le moteur d’analyse n’est pas encore implémenté.
 
-```
-pnpm create astro@latest -- --template starlight
-```
+## Commandes
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Depuis ce répertoire :
 
-## 🚀 Project Structure
+| Commande | Usage |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Installer les dépendances verrouillées |
+| `pnpm dev` | Démarrer le site en développement |
+| `pnpm build` | Compiler le site dans `dist/` |
+| `pnpm preview` | Consulter le build local |
 
-Inside of your Astro + Starlight project, you'll see the following folders and files:
+Pour un agent qui lance le serveur en arrière-plan, suivre [AGENTS.md](AGENTS.md).
 
-```
-.
-├── public/
-├── src/
-│   ├── assets/
-│   ├── content/
-│   │   └── docs/
-│   └── content.config.ts
-├── astro.config.mjs
-├── package.json
-└── tsconfig.json
-```
+## Éditer le contenu
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+Les pages sont dans `src/content/docs/`. La navigation est définie dans `astro.config.mjs`. Chaque page possède un `title` et une `description`. L’accueil utilise MDX ; les autres pages utilisent Markdown.
 
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
+Conserver la distinction entre contraintes du produit, choix proposés, fonctionnalités implémentées et pistes ultérieures. Relier les affirmations sur les outils externes à leur documentation amont. Les exemples doivent utiliser des données fictives et rester cohérents avec le contrat API.
 
-Static assets, like favicons, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+Après modification, exécuter `pnpm build` et vérifier les liens internes. La référence API en prose fait foi pendant cette phase de conception ; un contrat OpenAPI et ses exemples validés sont prévus avant l’implémentation HTTP.
