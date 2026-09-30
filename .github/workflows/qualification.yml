@@ -1,0 +1,35 @@
+name: v0.1 qualification
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm worker:build
+      - run: pnpm test:workers
+      - run: pnpm qualify:build
+      - run: pnpm qualify
+      - run: pnpm qualify:stress
+      - run: pnpm qualify:clean
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qualification-reports
+          include-hidden-files: true
+          path: |
+            .local/qualification/report.json
+            .local/qualification/stress.json
+            .local/qualification/clean-install.json

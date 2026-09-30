@@ -24,7 +24,7 @@ JSMINER_CONFIG="$PWD/.local/config.json" pnpm dev
 curl --fail -H "Authorization: Bearer $(cat .local/token)" http://127.0.0.1:3000/health
 ```
 
-`/health` répond `200` avec `phase: 4` lorsque le stockage est utilisable et que le superviseur n’est pas bloqué. Il ne démarre pas de worker et ne garantit pas la disponibilité de Docker ou de l’image. `POST /analyze` traite `content` et les URL autorisées ; les routes `/source` consultent les artefacts publiés. Sans origine configurée, le mode `url` répond `403 destination_denied`. L’arrêt par `Ctrl+C` annule l’analyse active, attend le nettoyage, puis ferme HTTP et SQLite.
+`/health` répond `200` avec `phase: 5` lorsque le stockage est utilisable et que le superviseur n’est pas bloqué. Il ne démarre pas de worker et ne garantit pas la disponibilité de Docker ou de l’image. `POST /analyze` traite `content` et les URL autorisées ; les routes `/source` consultent les artefacts publiés. Sans origine configurée, le mode `url` répond `403 destination_denied`. L’arrêt par `Ctrl+C` annule l’analyse active, attend le nettoyage, puis ferme HTTP et SQLite.
 
 Les images `jsminer-jsluice:phase2` et `jsminer-offline:phase3` se construisent avec `pnpm worker:build`. Le service résout son identifiant immuable et vérifie les étiquettes de version jsluice et de protocole (version 3) avant chaque exécution. Reconstruire l’image après une mise à jour du worker. Le worker reçoit uniquement le script sur stdin : aucun volume, socket Docker, secret de service ou réseau. Les limites mémoire, CPU, processus et sorties s’appliquent au conteneur. Le moteur Docker est piloté par le service hôte ; son accès est réservé à l’opérateur.
 
@@ -82,6 +82,11 @@ JSON Schema contrôle les structures, types, enums et bornes. `validateContract`
 | `pnpm typecheck` | Types des trois packages |
 | `pnpm test` | Tests sur le code compilé ; exécuter `pnpm build` avant |
 | `pnpm worker:build` | Construction des deux images de workers |
+| `pnpm test:qualification` | Tests du scoring et des contrôles du banc |
+| `pnpm qualify` | Mesures du corpus ; requiert `pnpm qualify:build` et les workers de production |
+| `pnpm qualify:stress` | Bundle contrôlé de 2 Mio, ressources et lectures bornées |
+| `pnpm qualify:clean` | Installation verrouillée dans un workspace temporaire et parcours HTTP complet |
+| `pnpm storage:purge` | Purge hors ligne des expirés ; exige un stockage existant et disponible |
 | `pnpm test:workers` | Intégration Docker réelle, extraction et cycle de vie ; requiert le build Node et l’image |
 | `docker build --platform linux/amd64 --target validate -t jsminer:validation .` | Installation verrouillée et vérifications sur Linux amd64 |
 
@@ -91,9 +96,9 @@ Biome **2.5.14** est épinglé avec le preset `recommended`. Sa [configuration](
 
 Le socle est vérifié sur macOS arm64 et sur Linux amd64 dans Docker, ce dernier étant émulé sur la machine de développement. Linux amd64, instance unique et stockage local privé, est la cible initiale. Windows, Linux arm64 et la performance native Linux ne sont pas qualifiés.
 
-Le Dockerfile sert à qualifier le socle ; son étage `runtime` utilise un utilisateur non privilégié, mais conserve les dépendances de développement. Ce n’est pas encore une image d’exploitation du moteur. Le service de phase 4 se lance sur l’hôte avec Docker disponible. Le Dockerfile racine ne fournit pas de client Docker et ne suffit donc pas à déployer le moteur complet. Les deux images de workers possèdent leurs Dockerfiles séparés. Tout accès distant passe par un proxy TLS privé ; ne transmettre les jetons en HTTP clair que sur la boucle locale.
+Le Dockerfile sert à qualifier le socle ; son étage `runtime` utilise un utilisateur non privilégié, mais conserve les dépendances de développement. Ce n’est pas encore une image d’exploitation du moteur. Le service de phase 5 se lance sur l’hôte avec Docker disponible. Le Dockerfile racine ne fournit pas de client Docker et ne suffit donc pas à déployer le moteur complet. Les deux images de workers possèdent leurs Dockerfiles séparés. Tout accès distant passe par un proxy TLS privé ; ne transmettre les jetons en HTTP clair que sur la boucle locale.
 
-Le [rapport de phase 4](/reference/phase-4-validation/) consigne les tests d’acquisition et de cache. Le [rapport de phase 3](/reference/phase-3-validation/) consigne les versions, les tests du profil complet et ses limites. Le [rapport de phase 2](/reference/phase-2-validation/) documente le socle du parcours hors ligne. Le [rapport de phase 1](/reference/phase-1-validation/) décrit les vérifications réalisées et les conditions de compatibilité avec le hash Fingerprinter.
+Le [rapport de phase 5](/reference/phase-5-validation/) mesure le corpus et le parcours depuis un workspace propre ; le [guide d’exploitation](/guides/operations/) couvre diagnostic, arrêt et purge. Le [rapport de phase 4](/reference/phase-4-validation/) consigne les tests d’acquisition et de cache. Le [rapport de phase 3](/reference/phase-3-validation/) consigne les versions, les tests du profil complet et ses limites. Le [rapport de phase 2](/reference/phase-2-validation/) documente le socle du parcours hors ligne. Le [rapport de phase 1](/reference/phase-1-validation/) décrit les vérifications réalisées et les conditions de compatibilité avec le hash Fingerprinter.
 
 La vérification amont est séparée de la CI Node.js et ne nécessite pas de navigateur : avec Python 3.12+, Go compatible avec le `go.mod` amont et les dépendances Go déjà en cache, exécuter `python3 scripts/verify-fingerprinter-hash.py /chemin/vers/Fingerprinter`. Le dépôt amont doit être propre ; le script exige le commit consigné dans les fixtures, le teste dans un répertoire temporaire et affiche le commit vérifié et ne modifie pas le dépôt original. Une nouvelle version doit être comparée au commit consigné dans les fixtures avant de mettre à jour la preuve.
 

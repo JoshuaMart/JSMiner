@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "scope": "Synthetic owned JavaScript; no remote targets or credential verification",
+  "gated_profile": "chain-combined",
+  "quality": {
+    "endpoints": { "precision": 0.9, "recall": 0.85 },
+    "secrets": { "precision": 1, "recall": 0.9 },
+    "gql_operations": { "precision": 1, "recall": 0.9 },
+    "subdomains": { "precision": 1, "recall": 0.9 }
+  },
+  "resources": {
+    "analysis_max_ms": 90000,
+    "worker_peak_max_bytes": 1073741824,
+    "api_peak_max_bytes": 536870912,
+    "artifact_max_bytes": 67108864,
+    "response_max_bytes": 262144
+  },
+  "profiles": {
+    "original-jsluice": ["jsluice", "graphql", "domains"],
+    "original-combined": ["jsluice", "trufflehog", "graphql", "domains"],
+    "webcrack-jsluice": ["webcrack", "jsluice", "graphql", "domains"],
+    "webcrack-combined": ["webcrack", "jsluice", "trufflehog", "graphql", "domains"],
+    "wakaru-jsluice": ["wakaru", "jsluice", "graphql", "domains"],
+    "wakaru-combined": ["wakaru", "jsluice", "trufflehog", "graphql", "domains"],
+    "chain-jsluice": ["webcrack", "wakaru", "jsluice", "graphql", "domains"],
+    "chain-combined": ["webcrack", "wakaru", "jsluice", "trufflehog", "graphql", "domains"]
+  }
+}

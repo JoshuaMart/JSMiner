@@ -260,6 +260,6 @@ export interface ErrorResponse {
 }
 export interface HealthResponse {
   status: "ok";
-  phase: 4;
+  phase: 5;
   storage: "ready";
 }

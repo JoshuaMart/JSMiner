@@ -18,6 +18,7 @@ export default defineConfig({
 						{ label: 'Vision et périmètre', slug: 'guides/vision' },
 						{ label: 'Feuille de route', slug: 'guides/roadmap' },
 						{ label: 'Développement', slug: 'guides/development' },
+						{ label: 'Exploitation', slug: 'guides/operations' },
 					],
 				},
 				{
@@ -36,6 +37,7 @@ export default defineConfig({
 						{ label: 'Validation phase 2', slug: 'reference/phase-2-validation' },
 						{ label: 'Validation phase 3', slug: 'reference/phase-3-validation' },
 						{ label: 'Validation phase 4', slug: 'reference/phase-4-validation' },
+						{ label: 'Validation phase 5', slug: 'reference/phase-5-validation' },
 					],
 				},
 				{

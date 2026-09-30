@@ -2,7 +2,7 @@
 
 Service TypeScript d’analyse statique de JavaScript, avec résultats compacts et consultation ciblée des sources.
 
-**Phase 4 : acquisition autorisée et cache disponibles.** Node.js 24.21.0, pnpm 10.33.0, Fastify et SQLite. `POST /analyze` accepte `content` ou une `url` autorisée côté serveur, enchaîne webcrack et Wakaru, puis applique jsluice, TruffleHog et les extracteurs GraphQL/domaines dans des conteneurs isolés. Les étapes réussies sont mises en cache par contenu, image immuable et profil de traitement ; chaque requête publie un nouveau handle. Les captures URL sont désactivées tant qu’aucune origine n’est configurée.
+**Phase 5 : qualification technique et exploitation disponibles.** Node.js 24.21.0, pnpm 10.33.0, Fastify et SQLite. `POST /analyze` accepte `content` ou une `url` autorisée côté serveur, enchaîne webcrack et Wakaru, puis applique jsluice, TruffleHog et les extracteurs GraphQL/domaines dans des conteneurs isolés. Les étapes réussies sont mises en cache par contenu, image immuable et profil de traitement ; chaque requête publie un nouveau handle. Les captures URL sont désactivées tant qu’aucune origine n’est configurée.
 
 ## Démarrer le service
 
@@ -65,6 +65,8 @@ pnpm dev
 Compiler le site avec `pnpm build` depuis `docs/`.
 
 - [Développement et configuration](docs/src/content/docs/guides/development.md)
+- [Qualification de phase 5](docs/src/content/docs/reference/phase-5-validation.md)
+- [Exploitation](docs/src/content/docs/guides/operations.md)
 - [Rapport de validation de phase 4](docs/src/content/docs/reference/phase-4-validation.md)
 - [Rapport de validation de phase 3](docs/src/content/docs/reference/phase-3-validation.md)
 - [Rapport de validation de phase 2](docs/src/content/docs/reference/phase-2-validation.md)
@@ -74,3 +76,17 @@ Compiler le site avec `pnpm build` depuis `docs/`.
 - [Feuille de route](docs/src/content/docs/guides/roadmap.md)
 
 J1, J2 et J3 sont validés. La convention Fingerprinter a été vérifiée sur son code : SHA-256 sans préfixe du corps CDP complet, après décodage éventuel du base64 (commit `32142b2`). Sa réutilisation est conditionnelle ; JSMiner conserve un hash du contenu intégral. Voir le rapport de validation.
+
+
+## Qualification et purge
+
+```sh
+pnpm qualify:build
+pnpm qualify
+pnpm qualify:stress
+pnpm qualify:clean
+# Après arrêt du service et avec les fichiers compilés :
+JSMINER_CONFIG="$PWD/.local/config.json" pnpm storage:purge
+```
+
+Le [banc de qualification](qualification/README.md) compare huit profils sur neuf fixtures synthétiques ; ses résultats ne constituent pas une mesure générale de détection. Les images de production doivent avoir été construites avec `pnpm worker:build` et le service avec `pnpm build`. Le workflow manuel `v0.1 qualification` reproduit les vérifications. J5 est validé avec la revue et les corrections du banc de phase 5 ; aucune version n’est publiée par ces commandes.

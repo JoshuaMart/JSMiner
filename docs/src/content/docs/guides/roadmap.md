@@ -122,18 +122,18 @@ Les jalons J1 à J5 sont ordonnés : le jalon précédent est requis pour valide
 
 ### 5.1. Mesurer la qualité et le coût
 
-- [ ] Constituer un corpus local annoté : scripts simples, bundles autorisés, syntaxes incomplètes et chaînes dynamiques.
-- [ ] Fixer avant les mesures les seuils d’acceptation de qualité par catégorie et les objectifs de ressources.
-- [ ] Mesurer précision, rappel et faux positifs pour chaque catégorie.
-- [ ] Comparer l’original, chaque transformateur seul et la chaîne complète ; comparer jsluice seul et avec TruffleHog.
-- [ ] Mesurer temps, pic mémoire et volume d’artefacts, puis ajuster les budgets documentés.
+- [x] Constituer un corpus local annoté : scripts simples, bundles autorisés, syntaxes incomplètes et chaînes dynamiques.
+- [x] Fixer avant les mesures les seuils d’acceptation de qualité par catégorie et les objectifs de ressources.
+- [x] Mesurer précision, rappel et faux positifs pour chaque catégorie.
+- [x] Comparer l’original, chaque transformateur seul et la chaîne complète ; comparer jsluice seul et avec TruffleHog.
+- [x] Mesurer temps, pic mémoire et volume d’artefacts, puis ajuster les budgets documentés.
 
 ### 5.2. Qualifier l’exploitation
 
-- [ ] Exécuter la matrice d’intégration ci-dessous et consigner les résultats reproductibles.
-- [ ] Vérifier une installation et une exécution complètes depuis un environnement propre avec les versions épinglées.
-- [ ] Documenter démarrage, configuration, diagnostic, arrêt, purge et limites connues du service.
-- [ ] Synchroniser OpenAPI, exemples, documentation et comportement livré.
+- [x] Exécuter la matrice d’intégration ci-dessous et consigner les résultats reproductibles.
+- [x] Vérifier une installation et une exécution complètes depuis un environnement propre avec les versions épinglées.
+- [x] Documenter démarrage, configuration, diagnostic, arrêt, purge et limites connues du service.
+- [x] Synchroniser OpenAPI, exemples, documentation et comportement livré.
 
 | Axe | Cas de validation |
 | --- | --- |
@@ -147,15 +147,15 @@ Les jalons J1 à J5 sont ordonnés : le jalon précédent est requis pour valide
 | Accès | Handle d’un autre projet inaccessible, expiration, chemins invalides refusés |
 | Transport | Acquisition sur serveur de fixture local, redirection refusée, tailles compressées/décompressées bornées |
 
-Ces tests qualifient le service sur des données contrôlées ; ils ne nécessitent aucune requête vers les endpoints ou secrets découverts. La documentation n’avance pas de chiffres de performance avant ces mesures.
+Ces tests qualifient le service sur des données contrôlées ; ils ne nécessitent aucune requête vers les endpoints ou secrets découverts. Les mesures et leurs limites sont consignées dans le [rapport de phase 5](/reference/phase-5-validation/).
 
 ### Jalon J5 — v0.1 prête à livrer
 
-- [ ] J1 à J4 sont validés et leurs preuves sont référencées.
-- [ ] Le rapport de corpus atteint les seuils fixés ; les limites de couverture restantes sont documentées.
-- [ ] Les scénarios de panne, d’arrêt, de quotas et de contrôle d’accès passent sans worker abandonné ni fuite dans les réponses/journaux.
-- [ ] Le parcours complet et le guide d’exploitation sont reproductibles depuis un environnement propre.
-- [ ] **J5 validé** — renseigner le commit et le rapport de qualification avant de préparer la livraison v0.1.
+- [x] J1 à J4 sont validés et leurs preuves sont référencées.
+- [x] Le rapport de corpus atteint les seuils fixés ; les limites de couverture restantes sont documentées.
+- [x] Les scénarios de panne, d’arrêt, de quotas et de contrôle d’accès passent sans worker abandonné ni fuite dans les réponses/journaux.
+- [x] Le parcours complet et le guide d’exploitation sont reproductibles depuis un environnement propre.
+- [x] **Signature de J5** — [qualification et revue terminées](/reference/phase-5-validation/) sur le moteur issu de `bdb1980` ; le présent incrément versionne le banc corrigé, les rapports et le guide d’exploitation. La préparation de livraison v0.1 peut commencer.
 
 ## Extensions après la v0.1
 
@@ -169,15 +169,15 @@ Ces pistes n’entrent pas dans les critères de livraison de J5. Chaque extensi
 
 ## Décision retenue
 
-**TypeScript pour le service**, validé par le mainteneur. Le socle retient Node.js 24.21.0, pnpm 10.33.0, Fastify et SQLite intégré. L’instance privée utilise des jetons opaques rattachés à un projet et des droits définis côté serveur. L’essai sur macOS arm64 et Linux amd64 est consigné dans le [rapport de phase 1](/reference/phase-1-validation/). Le superviseur jsluice est vérifié en J2 ; l’exploitation du profil complet reste à qualifier en J5.
+**TypeScript pour le service**, validé par le mainteneur. Le socle retient Node.js 24.21.0, pnpm 10.33.0, Fastify et SQLite intégré. L’instance privée utilise des jetons opaques rattachés à un projet et des droits définis côté serveur. L’essai sur macOS arm64 et Linux amd64 est consigné dans le [rapport de phase 1](/reference/phase-1-validation/). Le superviseur jsluice est vérifié en J2 ; le profil complet et le parcours d’exploitation passent la qualification technique J5 sur le corpus contrôlé.
 
 ## Décisions ouvertes
 
 | Sujet | Proposition actuelle | Élément attendu |
 | --- | --- | --- |
-| Profil de transformation | webcrack → Wakaru par défaut, repli sur l’original | Mesure de la chaîne et de chaque outil seul sur corpus |
-| Détection des secrets | TruffleHog hors ligne, complété par jsluice | Précision, rappel, coût et normalisation des sorties |
-| Dimensionnement du stockage | SQLite et fichiers privés, instance unique | Volume et concurrence réellement nécessaires (J5) |
+| Profil de transformation | webcrack → Wakaru conservé pour v0.1 ; profils explicites disponibles | Coût mesuré en J5, aucun gain de rappel sur les neuf cas ; corpus fortement obfusqué à étendre après v0.1 |
+| Détection des secrets | Combinaison conservée pour v0.1 | J5 confirme une famille synthétique ; élargir les familles avant toute affirmation de rappel général |
+| Dimensionnement du stockage | SQLite, fichiers privés, instance unique et quotas conservés | J5 valide les mécanismes ; volume d’exploitation réel à observer |
 | Source maps | Après v0.1, fournies ou embarquées | Format d’entrée auxiliaire explicite |
 
 Une décision devient acceptée lorsqu’elle est consignée dans la documentation avec ses conséquences ; une fonctionnalité devient implémentée lorsque ses critères de validation passent.

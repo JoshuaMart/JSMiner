@@ -1,0 +1,6663 @@
+{
+  "version": 1,
+  "created_at": "2026-09-30T17:04:13.875Z",
+  "corpus_hash": "ab94290e7b51a98aadd598a810e198b3d682dac8711aa1465eaaaa430be55b4f",
+  "policy_hash": "33b3149da11e84ba843b062c6f905c28866d434216cbf42ed63ceb09db3f0f34",
+  "environment": {
+    "node": "v24.21.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4 Pro",
+    "cpu_count": 14,
+    "memory_bytes": 51539607552,
+    "images": {
+      "jsminer-jsluice:phase2": "sha256:7626c9b6f4f44c243665d6396ade6eb95935b6ed6b9be2f81f8c4c237cf1fc68",
+      "jsminer-offline:phase3": "sha256:2d8fc374b4979d266badff0ba1e6823ce9fe95dac7e259b4911486dc1bd7d353",
+      "jsminer-jsluice:qualification": "sha256:0734a5c113caae92c6e5c4a26d3c7cb2030aacb856c48ec846453cc1ff8e08fc",
+      "jsminer-offline:qualification": "sha256:03fff1ca98452bb027dca3efe30dfdfa78ead11b72e0bb944483671d813e5a80"
+    }
+  },
+  "rows": [
+    {
+      "case": "simple-http",
+      "profile": "original-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 893
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 350
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 342
+        }
+      ],
+      "resources": {
+        "duration_ms": 1663,
+        "api_peak_bytes": 96813056,
+        "worker_peak_bytes": 112680960,
+        "worker_samples": 3,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10179,
+        "source_bytes": 59,
+        "response_bytes": 1756,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "graphql-fragments",
+      "profile": "original-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 241
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 348
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 348
+        }
+      ],
+      "resources": {
+        "duration_ms": 1007,
+        "api_peak_bytes": 97075200,
+        "worker_peak_bytes": 29429760,
+        "worker_samples": 3,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10530,
+        "source_bytes": 174,
+        "response_bytes": 1991,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "domain-boundaries",
+      "profile": "original-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 277
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 327
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 348
+        }
+      ],
+      "resources": {
+        "duration_ms": 1026,
+        "api_peak_bytes": 97583104,
+        "worker_peak_bytes": 28823552,
+        "worker_samples": 3,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11702,
+        "source_bytes": 140,
+        "response_bytes": 3197,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "synthetic-github",
+      "profile": "original-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 254
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 375
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 387
+        }
+      ],
+      "resources": {
+        "duration_ms": 1084,
+        "api_peak_bytes": 94732288,
+        "worker_peak_bytes": 29704192,
+        "worker_samples": 3,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10297,
+        "source_bytes": 78,
+        "response_bytes": 1855,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "owned-webpack",
+      "profile": "original-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 260
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 357
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 363
+        }
+      ],
+      "resources": {
+        "duration_ms": 1048,
+        "api_peak_bytes": 95617024,
+        "worker_peak_bytes": 29753344,
+        "worker_samples": 3,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10736,
+        "source_bytes": 180,
+        "response_bytes": 2191,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "incomplete-syntax",
+      "profile": "original-jsluice",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "partial",
+          "error_code": "syntax_incomplete",
+          "duration_ms": 253
+        },
+        {
+          "name": "graphql",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 402
+        },
+        {
+          "name": "domains",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 351
+        }
+      ],
+      "resources": {
+        "duration_ms": 1071,
+        "api_peak_bytes": 94355456,
+        "worker_peak_bytes": 28340224,
+        "worker_samples": 3,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 9852,
+        "source_bytes": 41,
+        "response_bytes": 1447,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "dynamic-strings",
+      "profile": "original-jsluice",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 261
+        },
+        {
+          "name": "graphql",
+          "status": "partial",
+          "error_code": "incomplete_document",
+          "duration_ms": 346
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 338
+        }
+      ],
+      "resources": {
+        "duration_ms": 1014,
+        "api_peak_bytes": 96813056,
+        "worker_peak_bytes": 29577216,
+        "worker_samples": 3,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10253,
+        "source_bytes": 74,
+        "response_bytes": 1815,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": ["/api/users/"]
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "negative-fragment",
+      "profile": "original-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 263
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 343
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 344
+        }
+      ],
+      "resources": {
+        "duration_ms": 1010,
+        "api_peak_bytes": 94339072,
+        "worker_peak_bytes": 29458432,
+        "worker_samples": 3,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 9579,
+        "source_bytes": 133,
+        "response_bytes": 1081,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "utf8-and-query",
+      "profile": "original-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 246
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 340
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 344
+        }
+      ],
+      "resources": {
+        "duration_ms": 991,
+        "api_peak_bytes": 94863360,
+        "worker_peak_bytes": 29904896,
+        "worker_samples": 3,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 9858,
+        "source_bytes": 62,
+        "response_bytes": 1432,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "simple-http",
+      "profile": "original-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 267
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1369
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 501
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 331
+        }
+      ],
+      "resources": {
+        "duration_ms": 2532,
+        "api_peak_bytes": 97189888,
+        "worker_peak_bytes": 436559872,
+        "worker_samples": 4,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10383,
+        "source_bytes": 59,
+        "response_bytes": 1960,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "graphql-fragments",
+      "profile": "original-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 254
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1264
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 348
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 348
+        }
+      ],
+      "resources": {
+        "duration_ms": 2283,
+        "api_peak_bytes": 96305152,
+        "worker_peak_bytes": 404365312,
+        "worker_samples": 4,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10734,
+        "source_bytes": 174,
+        "response_bytes": 2195,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "domain-boundaries",
+      "profile": "original-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 276
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1264
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 344
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 336
+        }
+      ],
+      "resources": {
+        "duration_ms": 2289,
+        "api_peak_bytes": 98271232,
+        "worker_peak_bytes": 406622208,
+        "worker_samples": 4,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11906,
+        "source_bytes": 140,
+        "response_bytes": 3401,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "synthetic-github",
+      "profile": "original-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 263
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1266
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 338
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 352
+        }
+      ],
+      "resources": {
+        "duration_ms": 2285,
+        "api_peak_bytes": 97026048,
+        "worker_peak_bytes": 403013632,
+        "worker_samples": 4,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10632,
+        "source_bytes": 78,
+        "response_bytes": 2190,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "owned-webpack",
+      "profile": "original-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 257
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1265
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 351
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 340
+        }
+      ],
+      "resources": {
+        "duration_ms": 2277,
+        "api_peak_bytes": 95469568,
+        "worker_peak_bytes": 405426176,
+        "worker_samples": 4,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10940,
+        "source_bytes": 180,
+        "response_bytes": 2395,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "incomplete-syntax",
+      "profile": "original-combined",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "partial",
+          "error_code": "syntax_incomplete",
+          "duration_ms": 298
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1262
+        },
+        {
+          "name": "graphql",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 334
+        },
+        {
+          "name": "domains",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 349
+        }
+      ],
+      "resources": {
+        "duration_ms": 2302,
+        "api_peak_bytes": 95059968,
+        "worker_peak_bytes": 404885504,
+        "worker_samples": 4,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10056,
+        "source_bytes": 41,
+        "response_bytes": 1651,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "dynamic-strings",
+      "profile": "original-combined",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 255
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1280
+        },
+        {
+          "name": "graphql",
+          "status": "partial",
+          "error_code": "incomplete_document",
+          "duration_ms": 350
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 407
+        }
+      ],
+      "resources": {
+        "duration_ms": 2357,
+        "api_peak_bytes": 96911360,
+        "worker_peak_bytes": 404578304,
+        "worker_samples": 4,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10457,
+        "source_bytes": 74,
+        "response_bytes": 2019,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": ["/api/users/"]
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "negative-fragment",
+      "profile": "original-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 264
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1275
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 371
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 348
+        }
+      ],
+      "resources": {
+        "duration_ms": 2318,
+        "api_peak_bytes": 94453760,
+        "worker_peak_bytes": 405377024,
+        "worker_samples": 4,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 9783,
+        "source_bytes": 133,
+        "response_bytes": 1285,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "utf8-and-query",
+      "profile": "original-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 281
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1290
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 334
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 376
+        }
+      ],
+      "resources": {
+        "duration_ms": 2340,
+        "api_peak_bytes": 95371264,
+        "worker_peak_bytes": 404914176,
+        "worker_samples": 4,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10062,
+        "source_bytes": 62,
+        "response_bytes": 1636,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "simple-http",
+      "profile": "webcrack-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 428
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 548
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 702
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 712
+        }
+      ],
+      "resources": {
+        "duration_ms": 2454,
+        "api_peak_bytes": 97222656,
+        "worker_peak_bytes": 52649984,
+        "worker_samples": 7,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10867,
+        "source_bytes": 123,
+        "response_bytes": 2193,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "graphql-fragments",
+      "profile": "webcrack-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 408
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 533
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 698
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 904
+        }
+      ],
+      "resources": {
+        "duration_ms": 2612,
+        "api_peak_bytes": 96845824,
+        "worker_peak_bytes": 51617792,
+        "worker_samples": 7,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11389,
+        "source_bytes": 352,
+        "response_bytes": 2484,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "domain-boundaries",
+      "profile": "webcrack-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 430
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 525
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 672
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 705
+        }
+      ],
+      "resources": {
+        "duration_ms": 2403,
+        "api_peak_bytes": 98205696,
+        "worker_peak_bytes": 48939008,
+        "worker_samples": 7,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 12917,
+        "source_bytes": 282,
+        "response_bytes": 4082,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "synthetic-github",
+      "profile": "webcrack-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 426
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 520
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 689
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 727
+        }
+      ],
+      "resources": {
+        "duration_ms": 2430,
+        "api_peak_bytes": 96862208,
+        "worker_peak_bytes": 49532928,
+        "worker_samples": 7,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11031,
+        "source_bytes": 158,
+        "response_bytes": 2322,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "owned-webpack",
+      "profile": "webcrack-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 425
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 762
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1029
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1039
+        }
+      ],
+      "resources": {
+        "duration_ms": 3329,
+        "api_peak_bytes": 98418688,
+        "worker_peak_bytes": 50667520,
+        "worker_samples": 10,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 12368,
+        "source_bytes": 478,
+        "response_bytes": 3146,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "incomplete-syntax",
+      "profile": "webcrack-jsluice",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 410
+        },
+        {
+          "name": "jsluice",
+          "status": "partial",
+          "error_code": "syntax_incomplete",
+          "duration_ms": 266
+        },
+        {
+          "name": "graphql",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 335
+        },
+        {
+          "name": "domains",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 336
+        }
+      ],
+      "resources": {
+        "duration_ms": 1408,
+        "api_peak_bytes": 95010816,
+        "worker_peak_bytes": 48091136,
+        "worker_samples": 4,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10102,
+        "source_bytes": 41,
+        "response_bytes": 1697,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "dynamic-strings",
+      "profile": "webcrack-jsluice",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 435
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 512
+        },
+        {
+          "name": "graphql",
+          "status": "partial",
+          "error_code": "incomplete_document",
+          "duration_ms": 700
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 736
+        }
+      ],
+      "resources": {
+        "duration_ms": 2451,
+        "api_peak_bytes": 97124352,
+        "worker_peak_bytes": 51957760,
+        "worker_samples": 7,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10953,
+        "source_bytes": 150,
+        "response_bytes": 2252,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": ["/api/users/"]
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "negative-fragment",
+      "profile": "webcrack-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 446
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 530
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 698
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 672
+        }
+      ],
+      "resources": {
+        "duration_ms": 2408,
+        "api_peak_bytes": 95174656,
+        "worker_peak_bytes": 52191232,
+        "worker_samples": 7,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10149,
+        "source_bytes": 274,
+        "response_bytes": 1322,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "utf8-and-query",
+      "profile": "webcrack-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 410
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 486
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 702
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 662
+        }
+      ],
+      "resources": {
+        "duration_ms": 2326,
+        "api_peak_bytes": 97484800,
+        "worker_peak_bytes": 50630656,
+        "worker_samples": 7,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10443,
+        "source_bytes": 121,
+        "response_bytes": 1771,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "simple-http",
+      "profile": "webcrack-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 798
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 499
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 2574
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 739
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 705
+        }
+      ],
+      "resources": {
+        "duration_ms": 5384,
+        "api_peak_bytes": 97419264,
+        "worker_peak_bytes": 404606976,
+        "worker_samples": 9,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11071,
+        "source_bytes": 123,
+        "response_bytes": 2397,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "graphql-fragments",
+      "profile": "webcrack-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 421
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 518
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 2556
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 664
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 700
+        }
+      ],
+      "resources": {
+        "duration_ms": 4927,
+        "api_peak_bytes": 97255424,
+        "worker_peak_bytes": 404713472,
+        "worker_samples": 9,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11593,
+        "source_bytes": 352,
+        "response_bytes": 2688,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "domain-boundaries",
+      "profile": "webcrack-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 407
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 497
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 2522
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 695
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 748
+        }
+      ],
+      "resources": {
+        "duration_ms": 4940,
+        "api_peak_bytes": 98533376,
+        "worker_peak_bytes": 404008960,
+        "worker_samples": 9,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 13121,
+        "source_bytes": 282,
+        "response_bytes": 4286,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "synthetic-github",
+      "profile": "webcrack-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 406
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 498
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 2572
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 670
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 698
+        }
+      ],
+      "resources": {
+        "duration_ms": 4910,
+        "api_peak_bytes": 97468416,
+        "worker_peak_bytes": 404615168,
+        "worker_samples": 9,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11497,
+        "source_bytes": 158,
+        "response_bytes": 2788,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "owned-webpack",
+      "profile": "webcrack-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 399
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 724
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 3796
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1008
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1034
+        }
+      ],
+      "resources": {
+        "duration_ms": 7028,
+        "api_peak_bytes": 98074624,
+        "worker_peak_bytes": 406183936,
+        "worker_samples": 13,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 12572,
+        "source_bytes": 478,
+        "response_bytes": 3350,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "incomplete-syntax",
+      "profile": "webcrack-combined",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 392
+        },
+        {
+          "name": "jsluice",
+          "status": "partial",
+          "error_code": "syntax_incomplete",
+          "duration_ms": 259
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1295
+        },
+        {
+          "name": "graphql",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 398
+        },
+        {
+          "name": "domains",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 322
+        }
+      ],
+      "resources": {
+        "duration_ms": 2723,
+        "api_peak_bytes": 94765056,
+        "worker_peak_bytes": 404299776,
+        "worker_samples": 5,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10306,
+        "source_bytes": 41,
+        "response_bytes": 1901,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "dynamic-strings",
+      "profile": "webcrack-combined",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 400
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 504
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 2558
+        },
+        {
+          "name": "graphql",
+          "status": "partial",
+          "error_code": "incomplete_document",
+          "duration_ms": 677
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 656
+        }
+      ],
+      "resources": {
+        "duration_ms": 4859,
+        "api_peak_bytes": 97501184,
+        "worker_peak_bytes": 405389312,
+        "worker_samples": 9,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11157,
+        "source_bytes": 150,
+        "response_bytes": 2456,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": ["/api/users/"]
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "negative-fragment",
+      "profile": "webcrack-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 401
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 496
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 2603
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 669
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 686
+        }
+      ],
+      "resources": {
+        "duration_ms": 4913,
+        "api_peak_bytes": 94994432,
+        "worker_peak_bytes": 404865024,
+        "worker_samples": 9,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10353,
+        "source_bytes": 274,
+        "response_bytes": 1526,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "utf8-and-query",
+      "profile": "webcrack-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 395
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 500
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 2539
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 676
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1268
+        }
+      ],
+      "resources": {
+        "duration_ms": 5444,
+        "api_peak_bytes": 97370112,
+        "worker_peak_bytes": 405475328,
+        "worker_samples": 9,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10648,
+        "source_bytes": 121,
+        "response_bytes": 1976,
+        "modules": 2
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "simple-http",
+      "profile": "wakaru-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 377
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 757
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1026
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1061
+        }
+      ],
+      "resources": {
+        "duration_ms": 3298,
+        "api_peak_bytes": 97386496,
+        "worker_peak_bytes": 74858496,
+        "worker_samples": 10,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11308,
+        "source_bytes": 193,
+        "response_bytes": 2381,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "graphql-fragments",
+      "profile": "wakaru-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 385
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 736
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1021
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1049
+        }
+      ],
+      "resources": {
+        "duration_ms": 3256,
+        "api_peak_bytes": 97452032,
+        "worker_peak_bytes": 45502464,
+        "worker_samples": 10,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11997,
+        "source_bytes": 532,
+        "response_bytes": 2728,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "domain-boundaries",
+      "profile": "wakaru-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 377
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 791
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1007
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1030
+        }
+      ],
+      "resources": {
+        "duration_ms": 3272,
+        "api_peak_bytes": 98222080,
+        "worker_peak_bytes": 45924352,
+        "worker_samples": 10,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 13901,
+        "source_bytes": 462,
+        "response_bytes": 4702,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "synthetic-github",
+      "profile": "wakaru-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 374
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 698
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 952
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 998
+        }
+      ],
+      "resources": {
+        "duration_ms": 3088,
+        "api_peak_bytes": 97665024,
+        "worker_peak_bytes": 46456832,
+        "worker_samples": 10,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11512,
+        "source_bytes": 240,
+        "response_bytes": 2538,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "owned-webpack",
+      "profile": "wakaru-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 381
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 677
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 994
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 934
+        }
+      ],
+      "resources": {
+        "duration_ms": 3055,
+        "api_peak_bytes": 98140160,
+        "worker_peak_bytes": 44728320,
+        "worker_samples": 10,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 12390,
+        "source_bytes": 535,
+        "response_bytes": 3118,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "incomplete-syntax",
+      "profile": "wakaru-jsluice",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 320
+        },
+        {
+          "name": "jsluice",
+          "status": "partial",
+          "error_code": "syntax_incomplete",
+          "duration_ms": 243
+        },
+        {
+          "name": "graphql",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 355
+        },
+        {
+          "name": "domains",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 324
+        }
+      ],
+      "resources": {
+        "duration_ms": 1306,
+        "api_peak_bytes": 95076352,
+        "worker_peak_bytes": 44347392,
+        "worker_samples": 4,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10100,
+        "source_bytes": 41,
+        "response_bytes": 1695,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "dynamic-strings",
+      "profile": "wakaru-jsluice",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 384
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 671
+        },
+        {
+          "name": "graphql",
+          "status": "partial",
+          "error_code": "incomplete_document",
+          "duration_ms": 982
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 972
+        }
+      ],
+      "resources": {
+        "duration_ms": 3084,
+        "api_peak_bytes": 97452032,
+        "worker_peak_bytes": 46219264,
+        "worker_samples": 10,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11016,
+        "source_bytes": 228,
+        "response_bytes": 2054,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": ["/api/users/"]
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "negative-fragment",
+      "profile": "wakaru-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 373
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 683
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 983
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 955
+        }
+      ],
+      "resources": {
+        "duration_ms": 3054,
+        "api_peak_bytes": 95223808,
+        "worker_peak_bytes": 45576192,
+        "worker_samples": 10,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10474,
+        "source_bytes": 417,
+        "response_bytes": 1320,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "utf8-and-query",
+      "profile": "wakaru-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 349
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 688
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1086
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 965
+        }
+      ],
+      "resources": {
+        "duration_ms": 3154,
+        "api_peak_bytes": 97599488,
+        "worker_peak_bytes": 50028544,
+        "worker_samples": 10,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10780,
+        "source_bytes": 182,
+        "response_bytes": 1864,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "simple-http",
+      "profile": "wakaru-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 340
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 733
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 3728
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 973
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 940
+        }
+      ],
+      "resources": {
+        "duration_ms": 6781,
+        "api_peak_bytes": 96878592,
+        "worker_peak_bytes": 406016000,
+        "worker_samples": 13,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11510,
+        "source_bytes": 193,
+        "response_bytes": 2583,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "graphql-fragments",
+      "profile": "wakaru-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 363
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 690
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 3710
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 988
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 960
+        }
+      ],
+      "resources": {
+        "duration_ms": 6786,
+        "api_peak_bytes": 97157120,
+        "worker_peak_bytes": 404996096,
+        "worker_samples": 13,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 12199,
+        "source_bytes": 532,
+        "response_bytes": 2930,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "domain-boundaries",
+      "profile": "wakaru-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 344
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 701
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 3943
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1039
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1051
+        }
+      ],
+      "resources": {
+        "duration_ms": 7151,
+        "api_peak_bytes": 98435072,
+        "worker_peak_bytes": 404881408,
+        "worker_samples": 13,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 14105,
+        "source_bytes": 462,
+        "response_bytes": 4906,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "synthetic-github",
+      "profile": "wakaru-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": true,
+        "reasons": ["evidence_count"]
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 346
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 706
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 3866
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 928
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 973
+        }
+      ],
+      "resources": {
+        "duration_ms": 6883,
+        "api_peak_bytes": 97271808,
+        "worker_peak_bytes": 406122496,
+        "worker_samples": 13,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11988,
+        "source_bytes": 240,
+        "response_bytes": 3014,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "owned-webpack",
+      "profile": "wakaru-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 371
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 705
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 3802
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 982
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 995
+        }
+      ],
+      "resources": {
+        "duration_ms": 6923,
+        "api_peak_bytes": 98336768,
+        "worker_peak_bytes": 405557248,
+        "worker_samples": 13,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 12594,
+        "source_bytes": 535,
+        "response_bytes": 3322,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "incomplete-syntax",
+      "profile": "wakaru-combined",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 352
+        },
+        {
+          "name": "jsluice",
+          "status": "partial",
+          "error_code": "syntax_incomplete",
+          "duration_ms": 230
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1281
+        },
+        {
+          "name": "graphql",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 316
+        },
+        {
+          "name": "domains",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 316
+        }
+      ],
+      "resources": {
+        "duration_ms": 2572,
+        "api_peak_bytes": 94879744,
+        "worker_peak_bytes": 405348352,
+        "worker_samples": 5,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10304,
+        "source_bytes": 41,
+        "response_bytes": 1899,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "dynamic-strings",
+      "profile": "wakaru-combined",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 407
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 715
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 3782
+        },
+        {
+          "name": "graphql",
+          "status": "partial",
+          "error_code": "incomplete_document",
+          "duration_ms": 1086
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 938
+        }
+      ],
+      "resources": {
+        "duration_ms": 6991,
+        "api_peak_bytes": 97157120,
+        "worker_peak_bytes": 405639168,
+        "worker_samples": 13,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11221,
+        "source_bytes": 228,
+        "response_bytes": 2259,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": ["/api/users/"]
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "negative-fragment",
+      "profile": "wakaru-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 337
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 702
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 3688
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1034
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 968
+        }
+      ],
+      "resources": {
+        "duration_ms": 6785,
+        "api_peak_bytes": 95174656,
+        "worker_peak_bytes": 405536768,
+        "worker_samples": 13,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10679,
+        "source_bytes": 417,
+        "response_bytes": 1525,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "utf8-and-query",
+      "profile": "wakaru-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 354
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 695
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 3728
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 959
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 957
+        }
+      ],
+      "resources": {
+        "duration_ms": 6756,
+        "api_peak_bytes": 97239040,
+        "worker_peak_bytes": 406224896,
+        "worker_samples": 13,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10983,
+        "source_bytes": 182,
+        "response_bytes": 2067,
+        "modules": 3
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "simple-http",
+      "profile": "chain-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 386
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 349
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 967
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1563
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1278
+        }
+      ],
+      "resources": {
+        "duration_ms": 4610,
+        "api_peak_bytes": 97107968,
+        "worker_peak_bytes": 56803328,
+        "worker_samples": 14,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11996,
+        "source_bytes": 257,
+        "response_bytes": 2818,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "graphql-fragments",
+      "profile": "chain-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 374
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 379
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 936
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1384
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1364
+        }
+      ],
+      "resources": {
+        "duration_ms": 4501,
+        "api_peak_bytes": 97468416,
+        "worker_peak_bytes": 51326976,
+        "worker_samples": 14,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 12856,
+        "source_bytes": 710,
+        "response_bytes": 3221,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "domain-boundaries",
+      "profile": "chain-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 416
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 343
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 941
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1280
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1353
+        }
+      ],
+      "resources": {
+        "duration_ms": 4402,
+        "api_peak_bytes": 98549760,
+        "worker_peak_bytes": 53231616,
+        "worker_samples": 14,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 15116,
+        "source_bytes": 604,
+        "response_bytes": 5587,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "synthetic-github",
+      "profile": "chain-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 418
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 363
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 955
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1353
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1305
+        }
+      ],
+      "resources": {
+        "duration_ms": 4462,
+        "api_peak_bytes": 97402880,
+        "worker_peak_bytes": 50663424,
+        "worker_samples": 14,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 12248,
+        "source_bytes": 320,
+        "response_bytes": 3007,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "owned-webpack",
+      "profile": "chain-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 389
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 363
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1143
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1632
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1645
+        }
+      ],
+      "resources": {
+        "duration_ms": 5241,
+        "api_peak_bytes": 98467840,
+        "worker_peak_bytes": 49553408,
+        "worker_samples": 17,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 14023,
+        "source_bytes": 833,
+        "response_bytes": 4074,
+        "modules": 5
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "incomplete-syntax",
+      "profile": "chain-jsluice",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 405
+        },
+        {
+          "name": "wakaru",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 325
+        },
+        {
+          "name": "jsluice",
+          "status": "partial",
+          "error_code": "syntax_incomplete",
+          "duration_ms": 229
+        },
+        {
+          "name": "graphql",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 310
+        },
+        {
+          "name": "domains",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 332
+        }
+      ],
+      "resources": {
+        "duration_ms": 1660,
+        "api_peak_bytes": 94683136,
+        "worker_peak_bytes": 49434624,
+        "worker_samples": 5,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10397,
+        "source_bytes": 41,
+        "response_bytes": 1992,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "dynamic-strings",
+      "profile": "chain-jsluice",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 405
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 354
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 909
+        },
+        {
+          "name": "graphql",
+          "status": "partial",
+          "error_code": "incomplete_document",
+          "duration_ms": 1338
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1494
+        }
+      ],
+      "resources": {
+        "duration_ms": 4565,
+        "api_peak_bytes": 97517568,
+        "worker_peak_bytes": 48676864,
+        "worker_samples": 14,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11718,
+        "source_bytes": 304,
+        "response_bytes": 2493,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": ["/api/users/"]
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "negative-fragment",
+      "profile": "chain-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 407
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 384
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 979
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1344
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1322
+        }
+      ],
+      "resources": {
+        "duration_ms": 4494,
+        "api_peak_bytes": 95256576,
+        "worker_peak_bytes": 50040832,
+        "worker_samples": 14,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11046,
+        "source_bytes": 558,
+        "response_bytes": 1563,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "utf8-and-query",
+      "profile": "chain-jsluice",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 408
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 351
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 931
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1284
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1337
+        }
+      ],
+      "resources": {
+        "duration_ms": 4374,
+        "api_peak_bytes": 97533952,
+        "worker_peak_bytes": 47759360,
+        "worker_samples": 14,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11366,
+        "source_bytes": 241,
+        "response_bytes": 2204,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "simple-http",
+      "profile": "chain-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 408
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 395
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 970
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 4976
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1803
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1339
+        }
+      ],
+      "resources": {
+        "duration_ms": 9951,
+        "api_peak_bytes": 97484800,
+        "worker_peak_bytes": 404893696,
+        "worker_samples": 18,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 12200,
+        "source_bytes": 257,
+        "response_bytes": 3022,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "graphql-fragments",
+      "profile": "chain-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 403
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 385
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 963
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 5215
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1296
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1350
+        }
+      ],
+      "resources": {
+        "duration_ms": 9675,
+        "api_peak_bytes": 97648640,
+        "worker_peak_bytes": 412844032,
+        "worker_samples": 18,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 13060,
+        "source_bytes": 710,
+        "response_bytes": 3425,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "domain-boundaries",
+      "profile": "chain-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 398
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 349
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 942
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 4992
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1285
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1400
+        }
+      ],
+      "resources": {
+        "duration_ms": 9432,
+        "api_peak_bytes": 98582528,
+        "worker_peak_bytes": 405049344,
+        "worker_samples": 18,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 15320,
+        "source_bytes": 604,
+        "response_bytes": 5791,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "synthetic-github",
+      "profile": "chain-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": true,
+        "reasons": ["evidence_count"]
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 437
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 357
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 966
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 5097
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1330
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1360
+        }
+      ],
+      "resources": {
+        "duration_ms": 9608,
+        "api_peak_bytes": 97632256,
+        "worker_peak_bytes": 406208512,
+        "worker_samples": 18,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 12593,
+        "source_bytes": 320,
+        "response_bytes": 3352,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "owned-webpack",
+      "profile": "chain-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 437
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 373
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1184
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 6556
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1618
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1579
+        }
+      ],
+      "resources": {
+        "duration_ms": 11816,
+        "api_peak_bytes": 98041856,
+        "worker_peak_bytes": 405237760,
+        "worker_samples": 22,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 14227,
+        "source_bytes": 833,
+        "response_bytes": 4278,
+        "modules": 5
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "incomplete-syntax",
+      "profile": "chain-combined",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 384
+        },
+        {
+          "name": "wakaru",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 355
+        },
+        {
+          "name": "jsluice",
+          "status": "partial",
+          "error_code": "syntax_incomplete",
+          "duration_ms": 226
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1316
+        },
+        {
+          "name": "graphql",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 452
+        },
+        {
+          "name": "domains",
+          "status": "error",
+          "error_code": "worker_failed",
+          "duration_ms": 316
+        }
+      ],
+      "resources": {
+        "duration_ms": 3110,
+        "api_peak_bytes": 94961664,
+        "worker_peak_bytes": 405323776,
+        "worker_samples": 6,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 10601,
+        "source_bytes": 41,
+        "response_bytes": 2196,
+        "modules": 1
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "dynamic-strings",
+      "profile": "chain-combined",
+      "incomplete": true,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 1,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "partial",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 402
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 355
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 969
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 5060
+        },
+        {
+          "name": "graphql",
+          "status": "partial",
+          "error_code": "incomplete_document",
+          "duration_ms": 1308
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1308
+        }
+      ],
+      "resources": {
+        "duration_ms": 9464,
+        "api_peak_bytes": 97583104,
+        "worker_peak_bytes": 405938176,
+        "worker_samples": 18,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11922,
+        "source_bytes": 304,
+        "response_bytes": 2697,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": ["/api/users/"]
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "negative-fragment",
+      "profile": "chain-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 404
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 352
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 903
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 4984
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1308
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1305
+        }
+      ],
+      "resources": {
+        "duration_ms": 9309,
+        "api_peak_bytes": 95059968,
+        "worker_peak_bytes": 405393408,
+        "worker_samples": 18,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11250,
+        "source_bytes": 558,
+        "response_bytes": 1767,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    },
+    {
+      "case": "utf8-and-query",
+      "profile": "chain-combined",
+      "incomplete": false,
+      "quality": {
+        "endpoints": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0
+        },
+        "secrets": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "gql_operations": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        },
+        "subdomains": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "status": "complete",
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "tools": [
+        {
+          "name": "webcrack",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 398
+        },
+        {
+          "name": "wakaru",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 372
+        },
+        {
+          "name": "jsluice",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 973
+        },
+        {
+          "name": "trufflehog",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 4975
+        },
+        {
+          "name": "graphql",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1424
+        },
+        {
+          "name": "domains",
+          "status": "success",
+          "error_code": null,
+          "duration_ms": 1318
+        }
+      ],
+      "resources": {
+        "duration_ms": 9525,
+        "api_peak_bytes": 97320960,
+        "worker_peak_bytes": 404480000,
+        "worker_samples": 18,
+        "missing_memory_samples": 0,
+        "artifact_bytes": 11570,
+        "source_bytes": 241,
+        "response_bytes": 2408,
+        "modules": 4
+      },
+      "differences": {
+        "endpoints": {
+          "missing": [],
+          "unexpected": []
+        },
+        "gql_operations": {
+          "missing": [],
+          "unexpected": []
+        },
+        "subdomains": {
+          "missing": [],
+          "unexpected": []
+        }
+      }
+    }
+  ],
+  "profiles": {
+    "original-jsluice": {
+      "quality": {
+        "endpoints": {
+          "tp": 11,
+          "fp": 1,
+          "fn": 0,
+          "precision": 0.9166666666666666,
+          "recall": 1
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "gql_operations": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "subdomains": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      },
+      "median_ms": 1026,
+      "max_ms": 1663,
+      "worker_peak_bytes": 112680960,
+      "api_peak_bytes": 97583104,
+      "artifact_bytes": 92986
+    },
+    "original-combined": {
+      "quality": {
+        "endpoints": {
+          "tp": 11,
+          "fp": 1,
+          "fn": 0,
+          "precision": 0.9166666666666666,
+          "recall": 1
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "gql_operations": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "subdomains": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      },
+      "median_ms": 2302,
+      "max_ms": 2532,
+      "worker_peak_bytes": 436559872,
+      "api_peak_bytes": 98271232,
+      "artifact_bytes": 94953
+    },
+    "webcrack-jsluice": {
+      "quality": {
+        "endpoints": {
+          "tp": 11,
+          "fp": 1,
+          "fn": 0,
+          "precision": 0.9166666666666666,
+          "recall": 1
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "gql_operations": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "subdomains": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      },
+      "median_ms": 2430,
+      "max_ms": 3329,
+      "worker_peak_bytes": 52649984,
+      "api_peak_bytes": 98418688,
+      "artifact_bytes": 100219
+    },
+    "webcrack-combined": {
+      "quality": {
+        "endpoints": {
+          "tp": 11,
+          "fp": 1,
+          "fn": 0,
+          "precision": 0.9166666666666666,
+          "recall": 1
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "gql_operations": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "subdomains": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      },
+      "median_ms": 4927,
+      "max_ms": 7028,
+      "worker_peak_bytes": 406183936,
+      "api_peak_bytes": 98533376,
+      "artifact_bytes": 102318
+    },
+    "wakaru-jsluice": {
+      "quality": {
+        "endpoints": {
+          "tp": 11,
+          "fp": 1,
+          "fn": 0,
+          "precision": 0.9166666666666666,
+          "recall": 1
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "gql_operations": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "subdomains": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      },
+      "median_ms": 3088,
+      "max_ms": 3298,
+      "worker_peak_bytes": 74858496,
+      "api_peak_bytes": 98222080,
+      "artifact_bytes": 103478
+    },
+    "wakaru-combined": {
+      "quality": {
+        "endpoints": {
+          "tp": 11,
+          "fp": 1,
+          "fn": 0,
+          "precision": 0.9166666666666666,
+          "recall": 1
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "gql_operations": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "subdomains": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      },
+      "median_ms": 6786,
+      "max_ms": 7151,
+      "worker_peak_bytes": 406224896,
+      "api_peak_bytes": 98435072,
+      "artifact_bytes": 105583
+    },
+    "chain-jsluice": {
+      "quality": {
+        "endpoints": {
+          "tp": 11,
+          "fp": 1,
+          "fn": 0,
+          "precision": 0.9166666666666666,
+          "recall": 1
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "gql_operations": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "subdomains": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      },
+      "median_ms": 4494,
+      "max_ms": 5241,
+      "worker_peak_bytes": 56803328,
+      "api_peak_bytes": 98549760,
+      "artifact_bytes": 110766
+    },
+    "chain-combined": {
+      "quality": {
+        "endpoints": {
+          "tp": 11,
+          "fp": 1,
+          "fn": 0,
+          "precision": 0.9166666666666666,
+          "recall": 1
+        },
+        "secrets": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "gql_operations": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "subdomains": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      },
+      "median_ms": 9525,
+      "max_ms": 11816,
+      "worker_peak_bytes": 412844032,
+      "api_peak_bytes": 98582528,
+      "artifact_bytes": 112743
+    }
+  },
+  "passed": true,
+  "gates": {
+    "matrix": true,
+    "quality": true,
+    "valid_tool_runs": true,
+    "resources": true
+  },
+  "engine_commit": "bdb1980b19cd39b4f85dfcd69ab50530c90eff71",
+  "stress": {
+    "case": "large-single-line",
+    "profile": "chain-combined",
+    "incomplete": false,
+    "quality": {
+      "endpoints": {
+        "tp": 1,
+        "fp": 0,
+        "fn": 0
+      },
+      "secrets": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 0
+      },
+      "gql_operations": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 0
+      },
+      "subdomains": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 0
+      }
+    },
+    "status": "complete",
+    "truncation": {
+      "truncated": false,
+      "reasons": []
+    },
+    "tools": [
+      {
+        "name": "webcrack",
+        "status": "success",
+        "error_code": null,
+        "duration_ms": 525
+      },
+      {
+        "name": "wakaru",
+        "status": "success",
+        "error_code": null,
+        "duration_ms": 381
+      },
+      {
+        "name": "jsluice",
+        "status": "success",
+        "error_code": null,
+        "duration_ms": 1672
+      },
+      {
+        "name": "trufflehog",
+        "status": "success",
+        "error_code": null,
+        "duration_ms": 6307
+      },
+      {
+        "name": "graphql",
+        "status": "success",
+        "error_code": null,
+        "duration_ms": 1703
+      },
+      {
+        "name": "domains",
+        "status": "success",
+        "error_code": null,
+        "duration_ms": 1715
+      }
+    ],
+    "resources": {
+      "duration_ms": 12404,
+      "api_peak_bytes": 145948672,
+      "worker_peak_bytes": 428187648,
+      "worker_samples": 22,
+      "missing_memory_samples": 0,
+      "artifact_bytes": 4206408,
+      "source_bytes": 4194788,
+      "response_bytes": 2496,
+      "modules": 5
+    },
+    "differences": {
+      "endpoints": {
+        "missing": [],
+        "unexpected": []
+      },
+      "gql_operations": {
+        "missing": [],
+        "unexpected": []
+      },
+      "subdomains": {
+        "missing": [],
+        "unexpected": []
+      }
+    },
+    "images": {
+      "jsminer-jsluice:phase2": "sha256:7626c9b6f4f44c243665d6396ade6eb95935b6ed6b9be2f81f8c4c237cf1fc68",
+      "jsminer-offline:phase3": "sha256:2d8fc374b4979d266badff0ba1e6823ce9fe95dac7e259b4911486dc1bd7d353",
+      "jsminer-jsluice:qualification": "sha256:0734a5c113caae92c6e5c4a26d3c7cb2030aacb856c48ec846453cc1ff8e08fc",
+      "jsminer-offline:qualification": "sha256:03fff1ca98452bb027dca3efe30dfdfa78ead11b72e0bb944483671d813e5a80"
+    },
+    "passed": true
+  },
+  "clean_install": {
+    "passed": true,
+    "date": "2026-09-30T17:10:03.279Z",
+    "node": "v24.21.0",
+    "checks": [
+      "frozen install",
+      "build",
+      "authenticated health",
+      "gzip capture",
+      "full production workers",
+      "cache hit",
+      "source bytes",
+      "project isolation",
+      "graceful shutdown",
+      "no abandoned workers",
+      "no source/token in logs",
+      "offline purge"
+    ]
+  },
+  "review": {
+    "remeasured_runs": 72,
+    "reused_runs": 0,
+    "previous_report_hash": "ddddfaf0e5a09ae4363a7475ce5673b9e8108a8a3521615024781f71b5bc8e06",
+    "corrections": [
+      "complete matrix and exact tool coverage",
+      "finite positive resource measurements",
+      "immutable worker image IDs and input hashes",
+      "atomic reports invalidated before work and exclusive qualification lock",
+      "bounded subprocess cancellation and scoped Docker cleanup",
+      "stress fixture loaded only for stress",
+      "purge success reported after storage closure"
+    ],
+    "cancellation": {
+      "passed": true,
+      "checks": [
+        "running analysis cancelled",
+        "subprocess exit awaited",
+        "owned Docker containers removed"
+      ]
+    }
+  }
+}

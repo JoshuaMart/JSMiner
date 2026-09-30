@@ -1643,7 +1643,7 @@
           },
           "phase": {
             "type": "integer",
-            "const": 4
+            "const": 5
           },
           "storage": {
             "type": "string",

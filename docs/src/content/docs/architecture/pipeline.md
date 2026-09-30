@@ -106,3 +106,7 @@ Un simple délai sur une promesse ne garantit pas l’arrêt du calcul. Le super
 Les workers ont un réseau désactivé, un utilisateur non privilégié, une racine en lecture seule et un stockage temporaire borné. Ils ne reçoivent ni socket Docker, ni secrets du service, ni accès aux autres analyses. Les fichiers générés restent non fiables : chemins, liens symboliques, tailles et types sont validés avant import.
 
 L’analyse n’exécute pas l’application cible. Certaines fonctions de désobfuscation peuvent toutefois évaluer des fragments : [l’API de webcrack décrit une fonction sandbox d’évaluation](https://webcrack.netlify.app/docs/guide/api.html#browser-usage-sandbox). L’isolement du moteur JavaScript ne remplace pas celui du worker. Aucun adaptateur ne doit utiliser un `eval` dans le processus de l’API.
+
+## Mesures de qualification
+
+Les [mesures J5](/reference/phase-5-validation/) conservent les budgets de la v0.1 : le corpus synthétique passe les seuils et le stress contrôlé de 2 Mio atteint environ 408 Mio par worker et 139 Mio pour l’API. Le profil complet coûte davantage sans gain de rappel sur ces neuf cas ; ils ne représentent pas les applications fortement obfusquées. Le plafond de 1 Gio par worker et les 90 s d’analyse gardent une marge ; le seuil API de 512 Mio est un objectif du banc, pas une limite imposée au processus serveur.

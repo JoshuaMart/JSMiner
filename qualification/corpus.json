@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "provenance": "Hand-authored synthetic fixtures; token-shaped values are inert test data. All endpoints are observations, never requested.",
+  "cases": [
+    {
+      "id": "simple-http",
+      "content": "fetch(\"/api/users\", {method:\"POST\"}); fetch(\"/api/health\");",
+      "reference_domains": ["example.com"],
+      "expected": {
+        "endpoints": ["/api/users", "/api/health"],
+        "secrets": [],
+        "gql_operations": [],
+        "subdomains": []
+      },
+      "incomplete": false
+    },
+    {
+      "id": "graphql-fragments",
+      "content": "const doc=gql`query Viewer($id: ID!) { ...Root } fragment Root on Query { viewer(id:$id){name} }`; const other=gql`mutation Save($name: String!) { save(name:$name) { id } }`;",
+      "reference_domains": ["example.com"],
+      "expected": {
+        "endpoints": [],
+        "secrets": [],
+        "gql_operations": ["query:Viewer", "mutation:Save"],
+        "subdomains": []
+      },
+      "incomplete": false
+    },
+    {
+      "id": "domain-boundaries",
+      "content": "const links=[\"https://api.example.com/v1\", \"https://example.com/\", \"https://api.example.com.other.test/x\", \"https://bücher.example.com/a\"];",
+      "reference_domains": ["example.com"],
+      "expected": {
+        "endpoints": [
+          "https://api.example.com/v1",
+          "https://example.com/",
+          "https://api.example.com.other.test/x",
+          "https://xn--bcher-kva.example.com/a"
+        ],
+        "secrets": [],
+        "gql_operations": [],
+        "subdomains": ["api.example.com", "xn--bcher-kva.example.com"]
+      },
+      "incomplete": false
+    },
+    {
+      "id": "synthetic-github",
+      "content": "const token=\"ghp_r8VnP5kQ2xL9mT4bZ7hD6sF3cY1wA0uE5jK9\"; fetch(\"/api/account\");",
+      "reference_domains": ["example.com"],
+      "expected": {
+        "endpoints": ["/api/account"],
+        "secrets": [
+          {
+            "kind": "github",
+            "values": ["ghp_r8VnP5kQ2xL9mT4bZ7hD6sF3cY1wA0uE5jK9"]
+          }
+        ],
+        "gql_operations": [],
+        "subdomains": []
+      },
+      "incomplete": false
+    },
+    {
+      "id": "owned-webpack",
+      "content": "(self.webpackChunk=self.webpackChunk||[]).push([[1],{42:function(module,exports,require){const doc=gql`query Bundle { viewer { id } }`;fetch(\"https://api.example.com/bundle\");}}]);",
+      "reference_domains": ["example.com"],
+      "expected": {
+        "endpoints": ["https://api.example.com/bundle"],
+        "secrets": [],
+        "gql_operations": ["query:Bundle"],
+        "subdomains": ["api.example.com"]
+      },
+      "incomplete": false
+    },
+    {
+      "id": "incomplete-syntax",
+      "content": "fetch(\"/api/recovered\"); const broken = ;",
+      "reference_domains": ["example.com"],
+      "expected": {
+        "endpoints": ["/api/recovered"],
+        "secrets": [],
+        "gql_operations": [],
+        "subdomains": []
+      },
+      "incomplete": true
+    },
+    {
+      "id": "dynamic-strings",
+      "content": "fetch(\"/api/users/\" + userId); const doc=gql`query Dynamic { ${fields} }`;",
+      "reference_domains": ["example.com"],
+      "expected": {
+        "endpoints": ["/api/users/EXPR"],
+        "secrets": [],
+        "gql_operations": [],
+        "subdomains": []
+      },
+      "incomplete": true
+    },
+    {
+      "id": "negative-fragment",
+      "content": "const message=\"a plain sentence\"; const port=8080; const wildcard=\"*.example.com\"; const doc=gql`fragment Alone on Query { unused }`;",
+      "reference_domains": ["example.com"],
+      "expected": {
+        "endpoints": [],
+        "secrets": [],
+        "gql_operations": [],
+        "subdomains": []
+      },
+      "incomplete": false
+    },
+    {
+      "id": "utf8-and-query",
+      "content": "﻿const ville=\"été 🥐\"; fetch(\"/api/search?q=fixture\");\r\n",
+      "reference_domains": ["example.com"],
+      "expected": {
+        "endpoints": ["/api/search?q=REDACTED"],
+        "secrets": [],
+        "gql_operations": [],
+        "subdomains": []
+      },
+      "incomplete": false
+    }
+  ]
+}

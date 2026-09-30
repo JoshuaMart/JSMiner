@@ -16,12 +16,18 @@
     "contracts:generate": "pnpm --filter @jsminer/contracts generate",
     "contracts:check": "pnpm --filter @jsminer/contracts check",
     "openapi:lint": "redocly lint packages/contracts/openapi.json",
-    "check": "pnpm lint && pnpm contracts:check && pnpm openapi:lint && pnpm build && pnpm typecheck && pnpm test",
+    "check": "pnpm lint && pnpm contracts:check && pnpm openapi:lint && pnpm build && pnpm typecheck && pnpm test && pnpm test:qualification",
     "lint": "biome check --error-on-warnings .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "worker:build": "docker build -t jsminer-jsluice:phase2 workers/jsluice && docker build -t jsminer-offline:phase3 workers/node",
-    "test:workers": "node --test apps/api/integration/*.test.mjs"
+    "test:workers": "node --test apps/api/integration/*.test.mjs",
+    "qualify:build": "node qualification/build.mjs",
+    "qualify": "node qualification/run.mjs",
+    "qualify:clean": "node qualification/clean-install.mjs",
+    "storage:purge": "node scripts/purge-expired.mjs",
+    "test:qualification": "node --test qualification/*.test.mjs",
+    "qualify:stress": "node qualification/stress.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
