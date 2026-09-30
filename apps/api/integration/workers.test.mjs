@@ -32,6 +32,7 @@ test('real jsluice extracts annotated local source, masks secrets and never eval
     {
       content: `const token = "${secret}"; fetch("/api/profile?access_token=fixture-value"); while(true) {} throw new Error("SOURCE_MARKER");`,
       endpoints: 1,
+      endpointValue: '/api/profile?access_token=fixture-value',
       secrets: 1,
       status: 'complete',
     },
@@ -67,13 +68,47 @@ test('real jsluice extracts annotated local source, masks secrets and never eval
     if (fixture.endpoints !== undefined)
       assert.equal(result.endpoints.length, fixture.endpoints, response.body);
     assert.equal(result.secrets.length, fixture.secrets, response.body);
-    for (const marker of [secret, 'fixture-value', 'SOURCE_MARKER', 'AIzaSYNTHETICfixture'])
+    if (fixture.endpointValue)
+      assert.ok(result.endpoints.some((e) => e.value === fixture.endpointValue));
+    for (const marker of [secret, 'SOURCE_MARKER', 'AIzaSYNTHETICfixture'])
       assert.ok(!response.body.includes(marker));
     const source = await app.inject({
       url: `/source/${result.handle}/original/bundle.js`,
       headers,
     });
     assert.equal(source.json().content, fixture.content);
+  }
+});
+
+test('real jsluice applies optional query redaction on cached output while always masking detected secrets', async (t) => {
+  const app = buildApp(configuration);
+  t.after(() => app.close());
+  const secret = `ghp_${'B'.repeat(36)}`;
+  const content = `const token = "${secret}"; fetch("/api/search?q=ordinary-query&access_token=${secret}");`;
+  for (const [index, redact] of [undefined, true, false].entries()) {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/analyze',
+      headers,
+      payload: {
+        content,
+        tools: ['jsluice'],
+        base_url: 'https://example.test/',
+        ...(redact === undefined ? {} : { redact_query_values: redact }),
+      },
+    });
+    assert.equal(response.statusCode, 200, response.body);
+    const result = response.json();
+    assert.equal(validateContract('AnalyzeResponse', result).ok, true);
+    assert.equal(result.status, 'complete');
+    assert.equal(result.cache.status, index === 0 ? 'miss' : 'hit');
+    assert.equal(result.endpoints.length, 1);
+    const url = new URL(result.endpoints[0].resolved_url);
+    assert.equal(url.searchParams.get('q'), redact ? 'REDACTED' : 'ordinary-query');
+    assert.equal(url.searchParams.get('access_token'), 'REDACTED');
+    assert.ok(result.secrets.some((s) => s.kind === 'github'));
+    assert.ok(result.secrets.every((s) => s.masked_value === '[REDACTED]'));
+    assert.ok(!response.body.includes(secret));
   }
 });
 

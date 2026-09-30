@@ -41,7 +41,7 @@ test('full offline profile traverses bundle transformations, merges synthetic se
     'trufflehog',
   ]);
   assert.ok(!response.body.includes(secret));
-  assert.ok(!response.body.includes('token=synthetic'));
+  assert.ok(r.endpoints.some((e) => e.value === 'https://api.example.com/v1?token=synthetic'));
   assert.equal(r.gql_operations.length, 1);
   assert.deepEqual(r.gql_operations[0].root_fields, ['user']);
   assert.equal(r.subdomains[0].hostname, 'api.example.com');
