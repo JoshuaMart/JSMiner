@@ -195,6 +195,17 @@
           }
         }
       }
+    },
+    "artifact_directory": {
+      "type": "string",
+      "minLength": 1
+    },
+    "worker_image": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_./:@-]*$",
+      "default": "jsminer-jsluice:phase2"
     }
   }
 }

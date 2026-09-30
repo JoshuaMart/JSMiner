@@ -4,7 +4,7 @@
   "info": {
     "title": "JSMiner API",
     "version": "0.1.0",
-    "description": "Phase 1 contract. Health is implemented; analysis and source operations validate inputs and return 501 until later milestones."
+    "description": "Offline content analysis with isolated jsluice and private source artifacts is implemented. URL acquisition, transformations and other extractors remain unavailable."
   },
   "servers": [
     {
@@ -227,7 +227,7 @@
             }
           },
           "501": {
-            "description": "Phase 1: analysis and artifact storage are not implemented",
+            "description": "URL acquisition is not implemented (offline content only)",
             "content": {
               "application/json": {
                 "schema": {
@@ -377,16 +377,6 @@
           },
           "500": {
             "description": "Internal failure",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Phase 1: analysis and artifact storage are not implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -545,16 +535,6 @@
           },
           "500": {
             "description": "Internal failure",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Phase 1: analysis and artifact storage are not implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -1673,7 +1653,7 @@
           },
           "phase": {
             "type": "integer",
-            "const": 1
+            "const": 2
           },
           "storage": {
             "type": "string",

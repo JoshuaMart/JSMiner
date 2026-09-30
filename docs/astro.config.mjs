@@ -33,6 +33,7 @@ export default defineConfig({
 						{ label: 'Contrat API', slug: 'reference/api' },
 						{ label: 'Modèle de résultats', slug: 'reference/results' },
 						{ label: 'Validation phase 1', slug: 'reference/phase-1-validation' },
+						{ label: 'Validation phase 2', slug: 'reference/phase-2-validation' },
 					],
 				},
 				{

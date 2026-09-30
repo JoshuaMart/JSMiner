@@ -5,7 +5,7 @@ description: Contrats v0.1, validation disponible et comportement métier prévu
 
 ## Conventions
 
-**Contrats et validation implémentés en phase 1.** Les traitements d’analyse et de sources restent à livrer : leurs requêtes valides répondent actuellement `501 not_implemented`. JSON UTF-8, noms de champs en `snake_case`, dates UTC au format RFC 3339. Toutes les routes nécessitent un jeton Bearer opaque associé à un projet par la configuration serveur. Les droits sont `analysis:write`, `analysis:read` et `source:read`. `POST /analyze` exige les deux premiers droits, les routes `/source` le troisième. Voir le [guide de configuration](/guides/development/).
+**Parcours hors ligne implémenté en phase 2.** `content` avec `tools: ["jsluice"]` et les lectures `/source` fonctionnent. Le mode URL reste à livrer (`501 url_not_implemented`) ; les autres outils demandés sont signalés `skipped / tool_unavailable`. JSON UTF-8, noms de champs en `snake_case`, dates UTC au format RFC 3339. Toutes les routes nécessitent un jeton Bearer opaque associé à un projet par la configuration serveur. Les droits sont `analysis:write`, `analysis:read` et `source:read`. `POST /analyze` exige les deux premiers droits, les routes `/source` le troisième. Voir le [guide de configuration](/guides/development/).
 
 Le contrat machine est `packages/contracts/schema.json`, complété par les invariants de `validateContract` ; `packages/contracts/openapi.json` est généré. Les exemples de réponses métier ci-dessous sont vérifiés comme fixtures et ne décrivent pas des traitements déjà disponibles. `GET /health`, authentifié avec `analysis:read`, vérifie réellement SQLite et répond `200` avec les champs `status: "ok"`, `phase: 1`, `storage: "ready"`.
 
@@ -225,6 +225,6 @@ Paramètres : `offset` en octets UTF-8, entier positif ou nul, défaut 0 ; `max_
 | `504` | Délai d’acquisition dépassé |
 | `503` | Service indisponible ou arrêt d’un worker impossible à confirmer |
 | `500` | Échec interne de persistance ou de publication |
-| `501` | En phase 1 : entrée valide, traitement métier encore non implémenté |
+| `501` | Mode URL non implémenté ; utiliser une entrée `content` |
 
 Les messages d’erreur n’incluent ni code source, ni sorties brutes, ni chemins locaux, ni URL contenant des données sensibles.

@@ -1,4 +1,4 @@
-/** Phase 1 defines the boundary only; no external tools are executed here. */
+/** Shared adapter boundaries and the isolated offline jsluice supervisor. */
 import type { ToolName } from '@jsminer/contracts';
 
 export interface AdapterDescriptor {
@@ -26,3 +26,5 @@ export interface Adapter {
   descriptor: AdapterDescriptor;
   run(input: AdapterInput): Promise<AdapterOutput>;
 }
+
+export * from './docker.js';

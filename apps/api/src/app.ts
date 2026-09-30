@@ -1,24 +1,40 @@
 import { randomUUID } from 'node:crypto';
-import type { ErrorResponse, Models, Permission } from '@jsminer/contracts';
+import type {
+  ErrorResponse,
+  Models,
+  Permission,
+  SourceListQuery,
+  SourceReadQuery,
+} from '@jsminer/contracts';
 import { schema, validateContract } from '@jsminer/contracts';
 import Fastify from 'fastify';
+import { AnalysisEngine, type EngineOptions } from './analysis.ts';
 import type { Principal } from './auth.ts';
 import { createAuthenticator } from './auth.ts';
 import { parseConfig } from './config.ts';
+import { ServiceError } from './errors.ts';
 import { openMetadataStore } from './storage.ts';
 
 declare module 'fastify' {
   interface FastifyRequest {
     principal: Principal | null;
+    releaseAdmission: (() => void) | null;
   }
   interface FastifyContextConfig {
     permissions?: readonly Permission[];
   }
 }
 
-export function buildApp(configuration: unknown) {
+export function buildApp(configuration: unknown, options: EngineOptions = {}) {
   const config = parseConfig(configuration);
   const storage = openMetadataStore(config.database);
+  let engine: AnalysisEngine;
+  try {
+    engine = new AnalysisEngine(config, storage.database, options);
+  } catch (error) {
+    storage.close();
+    throw error;
+  }
   const app = Fastify({
     logger: false,
     bodyLimit: config.budgets.http_body_bytes,
@@ -51,7 +67,16 @@ export function buildApp(configuration: unknown) {
     error: { code, message, request_id: id },
   });
   app.decorateRequest('principal', null);
-  app.addHook('onClose', async () => storage.close());
+  app.decorateRequest('releaseAdmission', null);
+  app.addHook('preClose', async () => engine.abort());
+  app.addHook('onClose', async () => {
+    try {
+      await engine.close();
+    } finally {
+      storage.close();
+    }
+  });
+  app.addHook('onResponse', async (request) => request.releaseAdmission?.());
   app.addHook('onRequest', async (request, reply) => {
     reply.header('Cache-Control', 'no-store');
     request.principal = authenticate(request.headers.authorization);
@@ -81,8 +106,23 @@ export function buildApp(configuration: unknown) {
       return reply
         .code(415)
         .send(errorBody(request.id, 'unsupported_media_type', 'Un corps JSON est requis.'));
+    if (request.method === 'POST' && request.routeOptions.url === '/analyze') {
+      const release = engine.reserve();
+      request.releaseAdmission = () => {
+        release();
+        request.raw.removeListener('aborted', onClose);
+        reply.raw.removeListener('close', onClose);
+      };
+      const onClose = () => request.releaseAdmission?.();
+      request.raw.once('aborted', onClose);
+      reply.raw.once('close', onClose);
+    }
   });
   app.setErrorHandler((error, request, reply) => {
+    if (error instanceof ServiceError) {
+      if (error.status === 429) reply.header('Retry-After', '1');
+      return reply.code(error.status).send(errorBody(request.id, error.code, 'Requête refusée.'));
+    }
     const fault = error as { code?: string; statusCode?: number };
     if (fault.code === 'invalid_utf8')
       return reply
@@ -119,18 +159,12 @@ export function buildApp(configuration: unknown) {
   );
 
   app.get('/health', { config: { permissions: ['analysis:read'] } }, async (request, reply) => {
-    if (!storage.isReady())
+    if (!storage.isReady() || !engine.healthy)
       return reply
         .code(503)
         .send(errorBody(request.id, 'storage_unavailable', 'Stockage indisponible.'));
-    return { status: 'ok', phase: 1, storage: 'ready' };
+    return { status: 'ok', phase: 2, storage: 'ready' };
   });
-  const notImplemented = (id: string) =>
-    errorBody(
-      id,
-      'not_implemented',
-      'Le moteur d’analyse et les artefacts seront implémentés après la phase 1.',
-    );
 
   app.post(
     '/analyze',
@@ -148,7 +182,22 @@ export function buildApp(configuration: unknown) {
         return reply
           .code(413)
           .send(errorBody(request.id, 'script_too_large', 'Script trop volumineux.'));
-      return reply.code(501).send(notImplemented(request.id));
+      const controller = new AbortController();
+      const abort = () => {
+        if (!reply.raw.writableFinished) controller.abort();
+      };
+      request.raw.once('aborted', abort);
+      reply.raw.once('close', abort);
+      try {
+        return await engine.analyze(
+          request.principal?.projectId ?? '',
+          result.value,
+          controller.signal,
+        );
+      } finally {
+        request.raw.removeListener('aborted', abort);
+        reply.raw.removeListener('close', abort);
+      }
     },
   );
 
@@ -178,7 +227,14 @@ export function buildApp(configuration: unknown) {
         return reply
           .code(problem.status)
           .send(errorBody(request.id, problem.code, 'Paramètres de manifeste invalides.'));
-      return reply.code(501).send(notImplemented(request.id));
+      const { handle } = request.params as { handle: string };
+      const query = normalizeQuery(request.query, ['limit']) as SourceListQuery;
+      return engine.store.list(
+        request.principal?.projectId ?? '',
+        handle,
+        query.limit,
+        query.cursor,
+      );
     },
   );
   app.get(
@@ -193,7 +249,14 @@ export function buildApp(configuration: unknown) {
         return reply
           .code(problem.status)
           .send(errorBody(request.id, problem.code, 'Paramètres de lecture invalides.'));
-      return reply.code(501).send(notImplemented(request.id));
+      const query = normalizeQuery(request.query, ['offset', 'max_bytes']) as SourceReadQuery;
+      return engine.store.read(
+        request.principal?.projectId ?? '',
+        params.handle,
+        params['*'],
+        query.offset,
+        query.max_bytes,
+      );
     },
   );
   return app;

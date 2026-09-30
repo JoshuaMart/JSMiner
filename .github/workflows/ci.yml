@@ -1,4 +1,4 @@
-name: Phase 1 validation
+name: Service validation
 on:
   push:
   pull_request:
@@ -21,4 +21,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Lint, contracts, build, types and tests
         run: pnpm check
+      - run: pnpm worker:build
+      - run: pnpm test:workers
       - run: docker build --target validate .

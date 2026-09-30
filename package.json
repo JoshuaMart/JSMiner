@@ -9,7 +9,7 @@
   },
   "scripts": {
     "config:init": "node scripts/init-local-config.mjs",
-    "dev": "pnpm --filter @jsminer/contracts build && pnpm --filter @jsminer/api dev",
+    "dev": "pnpm --filter @jsminer/contracts build && pnpm --filter @jsminer/adapters build && pnpm --filter @jsminer/api dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm --filter @jsminer/contracts build && pnpm -r typecheck",
     "test": "pnpm -r test",
@@ -19,7 +19,9 @@
     "check": "pnpm lint && pnpm contracts:check && pnpm openapi:lint && pnpm build && pnpm typecheck && pnpm test",
     "lint": "biome check --error-on-warnings .",
     "lint:fix": "biome check --write .",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "worker:build": "docker build -t jsminer-jsluice:phase2 workers/jsluice",
+    "test:workers": "node --test apps/api/integration/*.test.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",

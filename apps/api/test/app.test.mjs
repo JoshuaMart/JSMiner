@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { JSLUICE_VERSION } from '@jsminer/adapters';
 import { validateContract } from '@jsminer/contracts';
 import { buildApp } from '../dist/app.js';
 import { createAuthenticator } from '../dist/auth.js';
@@ -29,9 +30,31 @@ const rawConfig = () => ({
     { sha256: hash(other), project_id: 'project_b', permissions: ['source:read'] },
   ],
 });
+const options = {
+  worker: {
+    healthy: true,
+    async run() {
+      return {
+        status: 'success',
+        output: Buffer.from(
+          JSON.stringify({
+            type: 'done',
+            version: JSLUICE_VERSION,
+            truncated: false,
+            secrets_truncated: false,
+            syntax_error: false,
+          }),
+        ),
+        durationMs: 1,
+        errorCode: null,
+        version: JSLUICE_VERSION,
+      };
+    },
+  },
+};
 const headers = (token) => ({ authorization: `Bearer ${token}` });
 async function fixture(t, config = rawConfig()) {
-  const app = buildApp(config);
+  const app = buildApp(config, options);
   t.after(() => app.close());
   await app.ready();
   return app;
@@ -91,8 +114,8 @@ test('analysis authorizes before parsing and never executes a script', async (t)
     headers: headers(admin),
     payload: { content: 'throw new Error("fixture marker");' },
   });
-  assert.equal(r.statusCode, 501);
-  assert.equal(r.json().error.code, 'not_implemented');
+  assert.equal(r.statusCode, 200);
+  assert.equal(r.json().status, 'partial');
   assert.ok(!r.body.includes('fixture marker'));
 });
 test('HTTP rejects invalid contracts without removing fields or coercing body types', async (t) => {
@@ -140,7 +163,7 @@ test('transport enforces media type, body limit and decoded script bytes', async
   assert.equal((await post('{broken', { 'content-type': 'application/json' })).statusCode, 400);
   assert.equal((await post({ content: 'é'.repeat(17) })).statusCode, 413);
   assert.equal((await post({ content: 'x'.repeat(1100) })).statusCode, 413);
-  assert.equal((await post({ content: 'é'.repeat(16) })).statusCode, 501);
+  assert.equal((await post({ content: 'é'.repeat(16) })).statusCode, 200);
 });
 test('source route distinguishes wildcard path from manifest and validates numeric queries', async (t) => {
   const app = await fixture(t);
@@ -149,10 +172,10 @@ test('source route distinguishes wildcard path from manifest and validates numer
     403,
   );
   for (const [url, status] of [
-    ['/source/ana_fixture?limit=100', 501],
+    ['/source/ana_fixture?limit=100', 404],
     ['/source/ana_fixture?limit=101', 400],
     ['/source/ana_fixture?limit=1&limit=2', 400],
-    ['/source/ana_fixture/original/bundle.js?offset=0&max_bytes=65536', 501],
+    ['/source/ana_fixture/original/bundle.js?offset=0&max_bytes=65536', 404],
     ['/source/ana_fixture/original/bundle.js?offset=-1', 422],
     ['/source/ana_fixture/original/bundle.js?max_bytes=1e2', 422],
     ['/source/ana_fixture/original/bundle.js?offset=0&unknown=1', 422],
@@ -186,7 +209,7 @@ test('both source routes accept handles up to the contract limit', async (t) => 
         url: `/source/${handle}${suffix}`,
         headers: headers(admin),
       });
-      assert.equal(response.statusCode, length <= 128 ? 501 : 414);
+      assert.equal(response.statusCode, length <= 128 ? 404 : 414);
     }
   }
 });
@@ -210,17 +233,17 @@ test('JSON transport rejects invalid UTF-8 and accepts literal or escaped Unicod
   assert.equal(validateContract('ErrorResponse', refused.json()).ok, true);
   for (const content of ['\ufeffconst ville = "été 🥐";\r\n', 'replacement: \ufffd']) {
     const body = JSON.stringify({ content });
-    assert.equal((await post(Buffer.from(body))).statusCode, 501);
+    assert.equal((await post(Buffer.from(body))).statusCode, 200);
     const escaped = body.replace(
       /[\u007f-\uffff]/g,
       (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`,
     );
-    assert.equal((await post(Buffer.from(escaped))).statusCode, 501);
+    assert.equal((await post(Buffer.from(escaped))).statusCode, 200);
   }
   assert.equal((await post(Buffer.from('{broken'))).statusCode, 400);
 });
 test('strict decoding preserves script bytes through the registered JSON parser', async (t) => {
-  const app = buildApp(rawConfig());
+  const app = buildApp(rawConfig(), options);
   t.after(() => app.close());
   let parsedContent;
   app.addHook('preValidation', async (request) => {
@@ -233,7 +256,7 @@ test('strict decoding preserves script bytes through the registered JSON parser'
     headers: headers(admin),
     payload: { content },
   });
-  assert.equal(response.statusCode, 501);
+  assert.equal(response.statusCode, 200);
   assert.deepEqual(Buffer.from(parsedContent), Buffer.from(content));
 });
 test('SQLite migration persists and is idempotent across reopens', async () => {

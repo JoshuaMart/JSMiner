@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 
-/** Minimal metadata migration and connectivity probe; artifact storage belongs to phase 2. */
+/** Open metadata storage; the artifact store owns its additional versioned migration. */
 export function openMetadataStore(path: string) {
   const database = new DatabaseSync(path, {
     enableForeignKeyConstraints: true,
@@ -20,6 +20,7 @@ export function openMetadataStore(path: string) {
     `);
     const probe = database.prepare('SELECT version FROM schema_migrations WHERE version = ?');
     return {
+      database,
       isReady: () => probe.get(1)?.version === 1,
       close: () => database.close(),
     };

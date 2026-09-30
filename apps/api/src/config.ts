@@ -7,6 +7,8 @@ export interface ServiceConfig {
   host: '127.0.0.1' | '0.0.0.0';
   port: number;
   database: string;
+  artifact_directory?: string;
+  worker_image: string;
   tokens: { sha256: string; project_id: string; permissions: Permission[] }[];
   budgets: {
     http_body_bytes: number;
@@ -51,6 +53,8 @@ export function parseConfig(value: unknown, baseDirectory = process.cwd()): Serv
   )
     throw new Error('Inconsistent resource budgets.');
   copy.database = copy.database === ':memory:' ? ':memory:' : resolve(baseDirectory, copy.database);
+  if (copy.artifact_directory)
+    copy.artifact_directory = resolve(baseDirectory, copy.artifact_directory);
   return copy;
 }
 

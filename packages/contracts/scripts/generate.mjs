@@ -27,7 +27,7 @@ const errorDescriptions = {
   422: 'Invalid content or semantic parameters',
   429: 'Capacity or storage quota exceeded',
   500: 'Internal failure',
-  501: 'Phase 1: analysis and artifact storage are not implemented',
+  501: 'URL acquisition is not implemented (offline content only)',
   502: 'Capture failed',
   503: 'Service unavailable',
   504: 'Capture timeout',
@@ -76,7 +76,7 @@ const document = {
     title: 'JSMiner API',
     version: '0.1.0',
     description:
-      'Phase 1 contract. Health is implemented; analysis and source operations validate inputs and return 501 until later milestones.',
+      'Offline content analysis with isolated jsluice and private source artifacts is implemented. URL acquisition, transformations and other extractors remain unavailable.',
   },
   servers: [
     {
@@ -120,7 +120,7 @@ const document = {
         tags: ['Sources'],
         'x-required-permissions': ['source:read'],
         parameters: [handle, ...query('SourceListQuery')],
-        responses: responses('ManifestResponse', [400, 401, 403, 404, 410, 500, 501, 503]),
+        responses: responses('ManifestResponse', [400, 401, 403, 404, 410, 500, 503]),
       },
     },
     '/source/{handle}/{path}': {
@@ -139,7 +139,7 @@ const document = {
           ),
           ...query('SourceReadQuery'),
         ],
-        responses: responses('SourceResponse', [400, 401, 403, 404, 410, 416, 422, 500, 501, 503]),
+        responses: responses('SourceResponse', [400, 401, 403, 404, 410, 416, 422, 500, 503]),
       },
     },
   },

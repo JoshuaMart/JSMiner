@@ -37,29 +37,31 @@ Les jalons J1 à J5 sont ordonnés : le jalon précédent est requis pour valide
 
 ## 2. Construire le parcours hors ligne minimal
 
+**Phase 2 terminée.** Le parcours `content` avec jsluice et les lectures de sources sont vérifiés dans le [rapport J2](/reference/phase-2-validation/).
+
 ### 2.1. Traiter une entrée locale
 
-- [ ] Implémenter `POST /analyze` en mode `content`, sa validation et son admission bornée.
-- [ ] Calculer le hash et conserver `original/bundle.js` dans un stockage privé.
-- [ ] Construire le superviseur et le worker jsluice avec limites de temps, mémoire, processus et sorties.
-- [ ] Normaliser les endpoints et secrets, masquer les valeurs sensibles et conserver leur provenance.
-- [ ] Produire les statuts par outil et par catégorie, y compris pour une extraction sans observation.
+- [x] Implémenter `POST /analyze` en mode `content`, sa validation et son admission bornée.
+- [x] Calculer le hash et conserver `original/bundle.js` dans un stockage privé.
+- [x] Construire le superviseur et le worker jsluice avec limites de temps, mémoire, processus et sorties.
+- [x] Normaliser les endpoints et secrets, masquer les valeurs sensibles et conserver leur provenance.
+- [x] Produire les statuts par outil et par catégorie, y compris pour une extraction sans observation.
 
 ### 2.2. Publier et consulter les artefacts
 
-- [ ] Publier atomiquement les résultats et le manifeste sous un handle lié au projet.
-- [ ] Implémenter la pagination de `GET /source/:handle` et la lecture ciblée de `GET /source/:handle/:path`.
-- [ ] Appliquer les droits, l’expiration des handles et la purge des artefacts sans référence.
-- [ ] Vérifier l’arrêt et le nettoyage du worker après succès, erreur, annulation ou délai.
+- [x] Publier atomiquement les résultats et le manifeste sous un handle lié au projet.
+- [x] Implémenter la pagination de `GET /source/:handle` et la lecture ciblée de `GET /source/:handle/:path`.
+- [x] Appliquer les droits, l’expiration des handles et la purge des artefacts sans référence.
+- [x] Vérifier l’arrêt et le nettoyage du worker après succès, erreur, annulation ou délai.
 
 ### Jalon J2 — Parcours hors ligne utilisable
 
-- [ ] Une fixture annotée produit les observations attendues, avec des références de modules valides.
-- [ ] Une fixture sans observation termine avec succès et une couverture complète des catégories demandées.
-- [ ] La réponse d’analyse respecte son plafond et ne contient ni code source ni valeur brute de secret.
-- [ ] La lecture UTF-8, la pagination, l’isolation entre projets et l’expiration passent les tests d’intégration.
-- [ ] Aucun worker ne reste actif après les scénarios d’arrêt ; un nettoyage non confirmé empêche de nouvelles admissions.
-- [ ] **J2 validé** — renseigner le commit ou rapport de validation. Le mode URL et le profil complet restent à livrer.
+- [x] Une fixture annotée produit les observations attendues, avec des références de modules valides.
+- [x] Une fixture sans observation termine avec succès et une couverture complète des catégories demandées.
+- [x] La réponse d’analyse respecte son plafond et ne contient ni code source ni valeur brute de secret.
+- [x] La lecture UTF-8, la pagination, l’isolation entre projets et l’expiration passent les tests d’intégration.
+- [x] Aucun worker ne reste actif après les scénarios d’arrêt ; un nettoyage non confirmé empêche de nouvelles admissions.
+- [x] **J2 validé** — [rapport du 30 septembre 2026](/reference/phase-2-validation/). Le mode URL et le profil complet restent à livrer.
 
 ## 3. Ajouter les transformations et extracteurs
 
@@ -165,7 +167,7 @@ Ces pistes n’entrent pas dans les critères de livraison de J5. Chaque extensi
 
 ## Décision retenue
 
-**TypeScript pour le service**, validé par le mainteneur. Le socle retient Node.js 24.21.0, pnpm 10.33.0, Fastify et SQLite intégré. L’instance privée utilise des jetons opaques rattachés à un projet et des droits définis côté serveur. L’essai sur macOS arm64 et Linux amd64 est consigné dans le [rapport de phase 1](/reference/phase-1-validation/). La supervision des workers et l’exploitation complète restent à qualifier.
+**TypeScript pour le service**, validé par le mainteneur. Le socle retient Node.js 24.21.0, pnpm 10.33.0, Fastify et SQLite intégré. L’instance privée utilise des jetons opaques rattachés à un projet et des droits définis côté serveur. L’essai sur macOS arm64 et Linux amd64 est consigné dans le [rapport de phase 1](/reference/phase-1-validation/). Le superviseur jsluice est vérifié en J2 ; l’exploitation du profil complet reste à qualifier en J5.
 
 ## Décisions ouvertes
 
