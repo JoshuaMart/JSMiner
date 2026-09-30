@@ -1,7 +1,7 @@
 FROM node:24.21.0-bookworm-slim AS validate
 WORKDIR /app
 RUN npm install --global pnpm@10.33.0
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json redocly.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json redocly.yaml biome.json ./
 COPY packages ./packages
 COPY apps ./apps
 COPY scripts ./scripts

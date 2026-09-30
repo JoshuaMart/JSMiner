@@ -17,16 +17,22 @@ Rapport du **30 septembre 2026**. **Phase 1 terminée — J1 validé.** Le socle
 
 | Vérification | Résultat |
 | --- | --- |
-| `pnpm check` sur macOS arm64 | Génération synchronisée, OpenAPI sans avertissement, compilation, types et 68 tests réussis |
+| `pnpm check` sur macOS arm64 | Biome sans diagnostic, génération synchronisée, OpenAPI sans avertissement, compilation, types et 74 tests réussis |
 | Installation depuis un clone temporaire propre du contenu à livrer | Lockfile figé, aucune dépendance ni sortie compilée copiée ; `pnpm check` réussi |
-| Docker Linux amd64, Node.js 24.21.0 | Installation verrouillée, compilation, types et 68 tests réussis, sous émulation, avec les fixtures actualisées au correctif `32142b2` |
-| Contrats | 57 tests : exemples valides/invalides, exclusivité d’entrée, plafonds UTF-8, source, couverture, cache, preuves et hash locaux |
-| API et configuration | 11 tests : droits, identité projet, erreurs, transport, paramètres de routes, budgets, credentials privés et démarrage invalide |
+| Docker Linux amd64, Node.js 24.21.0 | Installation verrouillée, compilation, types et 74 tests réussis, sous émulation, avec les fixtures actualisées au correctif `32142b2` |
+| Contrats | 60 tests : exemples valides/invalides, exclusivité d’entrée, plafonds UTF-8, source, couverture, cache, preuves et hash locaux |
+| API et configuration | 14 tests : droits, identité projet, erreurs, transport, paramètres de routes, budgets, credentials privés et démarrage invalide |
 | HTTP réel | Socket éphémère sur boucle locale, lecture authentifiée de `/health`, fermeture puis connexion refusée |
 | SQLite | Base temporaire sur disque, migration et réouverture idempotentes |
 | Documentation | Compilation de 12 pages réussie et aucun lien interne cassé ; avertissements Astro/Starlight existants non bloquants |
 
 Les essais HTTP ferment leurs sockets et les fichiers temporaires sont supprimés. Aucun serveur Astro n’est nécessaire pour ces tests. Le workflow `.github/workflows/ci.yml` reproduit les contrôles ; son exécution sur GitHub reste à observer après publication des changements.
+
+## Correctifs après revue
+
+Les trois écarts relevés ont des tests de régression : une transformation incomplète dégrade la couverture des catégories demandées, un extracteur réussi doit avoir analysé tous les modules disponibles, et les statuts globaux restent cohérents. Les deux routes de sources acceptent les handles jusqu’à 128 caractères. Le corps JSON est reçu sous forme d’octets bornés puis décodé strictement en UTF-8 avant le parseur JSON Fastify ; les octets invalides donnent `422`, sans altération silencieuse du contenu.
+
+Biome 2.5.14 contrôle désormais le code et les tests du service dans `pnpm check`, y compris en CI et dans la validation Docker. Les fichiers générés gardent leur contrôle de synchronisation dédié.
 
 ## Fingerprinter : convention vérifiée
 

@@ -8,7 +8,11 @@ try {
   const config = loadConfig(file);
   app = buildApp(config);
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {
-    process.once(signal, () => { void app?.close().catch(() => { process.exitCode = 1; }); });
+    process.once(signal, () => {
+      void app?.close().catch(() => {
+        process.exitCode = 1;
+      });
+    });
   }
   await app.listen({ host: config.host, port: config.port });
   console.info(`JSMiner phase 1 listening on ${config.host}:${config.port}`);

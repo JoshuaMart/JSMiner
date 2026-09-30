@@ -4,9 +4,7 @@
     "schema": "AnalyzeRequest",
     "data": {
       "content": "fetch(\"/api/profile\");",
-      "tools": [
-        "jsluice"
-      ],
+      "tools": ["jsluice"],
       "base_url": "https://app.example.com/dashboard"
     }
   },
@@ -120,9 +118,7 @@
     "schema": "AnalyzeRequest",
     "data": {
       "url": "https://app.example.com/bundle.js",
-      "tools": [
-        "jsluice"
-      ]
+      "tools": ["jsluice"]
     }
   },
   {
@@ -130,12 +126,8 @@
     "schema": "AnalyzeRequest",
     "data": {
       "content": "const x = 1;",
-      "tools": [
-        "domains"
-      ],
-      "reference_domains": [
-        "example.com"
-      ]
+      "tools": ["domains"],
+      "reference_domains": ["example.com"]
     }
   },
   {
@@ -358,9 +350,7 @@
           "operation_type": "query",
           "name": "Profile",
           "variables": [],
-          "root_fields": [
-            "profile"
-          ],
+          "root_fields": ["profile"],
           "document_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
           "endpoint_id": "ep_example_01"
         }

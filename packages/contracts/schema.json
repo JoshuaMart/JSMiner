@@ -5,23 +5,12 @@
   "$defs": {
     "ToolName": {
       "type": "string",
-      "enum": [
-        "webcrack",
-        "wakaru",
-        "jsluice",
-        "trufflehog",
-        "graphql",
-        "domains"
-      ],
+      "enum": ["webcrack", "wakaru", "jsluice", "trufflehog", "graphql", "domains"],
       "title": "ToolName"
     },
     "Permission": {
       "type": "string",
-      "enum": [
-        "analysis:write",
-        "analysis:read",
-        "source:read"
-      ],
+      "enum": ["analysis:write", "analysis:read", "source:read"],
       "title": "Permission"
     },
     "Hash": {
@@ -100,22 +89,16 @@
       "required": [],
       "oneOf": [
         {
-          "required": [
-            "url"
-          ]
+          "required": ["url"]
         },
         {
-          "required": [
-            "content"
-          ]
+          "required": ["content"]
         }
       ],
       "allOf": [
         {
           "if": {
-            "required": [
-              "tools"
-            ],
+            "required": ["tools"],
             "properties": {
               "tools": {
                 "contains": {
@@ -125,9 +108,7 @@
             }
           },
           "then": {
-            "required": [
-              "reference_domains"
-            ],
+            "required": ["reference_domains"],
             "properties": {
               "reference_domains": {
                 "minItems": 1
@@ -190,10 +171,7 @@
           "$ref": "#/$defs/ModulePath"
         }
       },
-      "required": [
-        "handle",
-        "path"
-      ],
+      "required": ["handle", "path"],
       "title": "SourceParams"
     },
     "ManifestParams": {
@@ -204,9 +182,7 @@
           "$ref": "#/$defs/Identifier"
         }
       },
-      "required": [
-        "handle"
-      ],
+      "required": ["handle"],
       "title": "ManifestParams"
     },
     "Location": {
@@ -224,28 +200,17 @@
           "maximum": 9007199254740991
         }
       },
-      "required": [
-        "start_byte",
-        "end_byte"
-      ],
+      "required": ["start_byte", "end_byte"],
       "title": "Location"
     },
     "Representation": {
       "type": "string",
-      "enum": [
-        "original",
-        "webcrack",
-        "wakaru"
-      ],
+      "enum": ["original", "webcrack", "wakaru"],
       "title": "Representation"
     },
     "Confidence": {
       "type": "string",
-      "enum": [
-        "low",
-        "medium",
-        "high"
-      ],
+      "enum": ["low", "medium", "high"],
       "title": "Confidence"
     },
     "Evidence": {
@@ -272,12 +237,7 @@
           ]
         }
       },
-      "required": [
-        "tool",
-        "module_path",
-        "representation",
-        "location"
-      ],
+      "required": ["tool", "module_path", "representation", "location"],
       "title": "Evidence"
     },
     "SecretEvidence": {
@@ -286,10 +246,7 @@
       "properties": {
         "tool": {
           "type": "string",
-          "enum": [
-            "jsluice",
-            "trufflehog"
-          ]
+          "enum": ["jsluice", "trufflehog"]
         },
         "module_path": {
           "$ref": "#/$defs/ModulePath"
@@ -314,13 +271,7 @@
           "pattern": "^(?:jsluice|trufflehog):[A-Za-z0-9._-]+$"
         }
       },
-      "required": [
-        "tool",
-        "module_path",
-        "representation",
-        "location",
-        "rule_id"
-      ],
+      "required": ["tool", "module_path", "representation", "location", "rule_id"],
       "title": "SecretEvidence"
     },
     "Endpoint": {
@@ -371,12 +322,7 @@
         },
         "kind": {
           "type": "string",
-          "enum": [
-            "http_call",
-            "navigation",
-            "resource",
-            "literal"
-          ]
+          "enum": ["http_call", "navigation", "resource", "literal"]
         },
         "dynamic": {
           "type": "boolean"
@@ -494,11 +440,7 @@
         },
         "operation_type": {
           "type": "string",
-          "enum": [
-            "query",
-            "mutation",
-            "subscription"
-          ]
+          "enum": ["query", "mutation", "subscription"]
         },
         "name": {
           "anyOf": [
@@ -530,10 +472,7 @@
                 "maxLength": 256
               }
             },
-            "required": [
-              "name",
-              "type"
-            ]
+            "required": ["name", "type"]
           },
           "minItems": 0,
           "maxItems": 128
@@ -601,23 +540,12 @@
           "$ref": "#/$defs/Domain"
         }
       },
-      "required": [
-        "id",
-        "confidence",
-        "evidence",
-        "hostname",
-        "reference_domain"
-      ],
+      "required": ["id", "confidence", "evidence", "hostname", "reference_domain"],
       "title": "Subdomain"
     },
     "CoverageStatus": {
       "type": "string",
-      "enum": [
-        "complete",
-        "partial",
-        "failed",
-        "not_requested"
-      ],
+      "enum": ["complete", "partial", "failed", "not_requested"],
       "title": "CoverageStatus"
     },
     "ToolRun": {
@@ -641,13 +569,7 @@
         },
         "status": {
           "type": "string",
-          "enum": [
-            "success",
-            "partial",
-            "timeout",
-            "error",
-            "skipped"
-          ]
+          "enum": ["success", "partial", "timeout", "error", "skipped"]
         },
         "duration_ms": {
           "type": "integer",
@@ -721,17 +643,12 @@
             "properties": {
               "name": {
                 "type": "string",
-                "enum": [
-                  "webcrack",
-                  "wakaru"
-                ]
+                "enum": ["webcrack", "wakaru"]
               }
             }
           },
           "then": {
-            "required": [
-              "input_path"
-            ],
+            "required": ["input_path"],
             "properties": {
               "modules_analyzed": {
                 "type": "null"
@@ -773,11 +690,7 @@
         },
         "status": {
           "type": "string",
-          "enum": [
-            "complete",
-            "partial",
-            "failed"
-          ]
+          "enum": ["complete", "partial", "failed"]
         },
         "script_hash": {
           "$ref": "#/$defs/Hash"
@@ -794,16 +707,10 @@
           "properties": {
             "status": {
               "type": "string",
-              "enum": [
-                "hit",
-                "partial_hit",
-                "miss"
-              ]
+              "enum": ["hit", "partial_hit", "miss"]
             }
           },
-          "required": [
-            "status"
-          ]
+          "required": ["status"]
         },
         "endpoints": {
           "type": "array",
@@ -854,12 +761,7 @@
               "$ref": "#/$defs/CoverageStatus"
             }
           },
-          "required": [
-            "endpoints",
-            "secrets",
-            "gql_operations",
-            "subdomains"
-          ]
+          "required": ["endpoints", "secrets", "gql_operations", "subdomains"]
         },
         "tools": {
           "type": "array",
@@ -894,10 +796,7 @@
               "uniqueItems": true
             }
           },
-          "required": [
-            "truncated",
-            "reasons"
-          ]
+          "required": ["truncated", "reasons"]
         },
         "warnings": {
           "type": "array",
@@ -922,10 +821,7 @@
                 ]
               }
             },
-            "required": [
-              "code",
-              "tool"
-            ]
+            "required": ["code", "tool"]
           },
           "minItems": 0,
           "maxItems": 32
@@ -983,14 +879,7 @@
           "$ref": "#/$defs/Hash"
         }
       },
-      "required": [
-        "path",
-        "origin",
-        "parent_path",
-        "bytes",
-        "lines",
-        "hash"
-      ],
+      "required": ["path", "origin", "parent_path", "bytes", "lines", "hash"],
       "allOf": [
         {
           "if": {
@@ -1061,13 +950,7 @@
           ]
         }
       },
-      "required": [
-        "handle",
-        "expires_at",
-        "modules",
-        "total_modules",
-        "next_cursor"
-      ],
+      "required": ["handle", "expires_at", "modules", "total_modules", "next_cursor"],
       "title": "ManifestResponse"
     },
     "SourceResponse": {
@@ -1147,16 +1030,10 @@
               "$ref": "#/$defs/Identifier"
             }
           },
-          "required": [
-            "code",
-            "message",
-            "request_id"
-          ]
+          "required": ["code", "message", "request_id"]
         }
       },
-      "required": [
-        "error"
-      ],
+      "required": ["error"],
       "title": "ErrorResponse"
     },
     "HealthResponse": {
@@ -1176,11 +1053,7 @@
           "const": "ready"
         }
       },
-      "required": [
-        "status",
-        "phase",
-        "storage"
-      ],
+      "required": ["status", "phase", "storage"],
       "title": "HealthResponse"
     }
   },

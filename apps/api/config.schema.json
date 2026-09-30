@@ -3,17 +3,11 @@
   "title": "ServiceConfig",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "database",
-    "tokens"
-  ],
+  "required": ["database", "tokens"],
   "properties": {
     "host": {
       "type": "string",
-      "enum": [
-        "127.0.0.1",
-        "0.0.0.0"
-      ],
+      "enum": ["127.0.0.1", "0.0.0.0"],
       "default": "127.0.0.1"
     },
     "port": {
@@ -33,11 +27,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "sha256",
-          "project_id",
-          "permissions"
-        ],
+        "required": ["sha256", "project_id", "permissions"],
         "properties": {
           "sha256": {
             "type": "string",
@@ -54,11 +44,7 @@
             "uniqueItems": true,
             "items": {
               "type": "string",
-              "enum": [
-                "analysis:write",
-                "analysis:read",
-                "source:read"
-              ]
+              "enum": ["analysis:write", "analysis:read", "source:read"]
             }
           }
         }

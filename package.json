@@ -16,9 +16,13 @@
     "contracts:generate": "pnpm --filter @jsminer/contracts generate",
     "contracts:check": "pnpm --filter @jsminer/contracts check",
     "openapi:lint": "redocly lint packages/contracts/openapi.json",
-    "check": "pnpm contracts:check && pnpm openapi:lint && pnpm build && pnpm typecheck && pnpm test"
+    "check": "pnpm lint && pnpm contracts:check && pnpm openapi:lint && pnpm build && pnpm typecheck && pnpm test",
+    "lint": "biome check --error-on-warnings .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write ."
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.14",
     "@redocly/cli": "2.57.0",
     "@types/node": "24.19.0",
     "typescript": "6.0.3"

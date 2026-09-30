@@ -2,7 +2,11 @@ import { DatabaseSync } from 'node:sqlite';
 
 /** Minimal metadata migration and connectivity probe; artifact storage belongs to phase 2. */
 export function openMetadataStore(path: string) {
-  const database = new DatabaseSync(path, { enableForeignKeyConstraints: true, allowExtension: false, timeout: 1000 });
+  const database = new DatabaseSync(path, {
+    enableForeignKeyConstraints: true,
+    allowExtension: false,
+    timeout: 1000,
+  });
   try {
     database.exec(`
       PRAGMA journal_mode = WAL;

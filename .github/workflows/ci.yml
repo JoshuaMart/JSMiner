@@ -19,5 +19,6 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm check
+      - name: Lint, contracts, build, types and tests
+        run: pnpm check
       - run: docker build --target validate .

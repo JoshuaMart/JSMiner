@@ -37,7 +37,7 @@ Réponse attendue : `{"status":"ok","phase":1,"storage":"ready"}`. Arrêter le s
 | `packages/adapters` | Interfaces des futurs adaptateurs isolés |
 | `docs` | Site Astro/Starlight avec son workspace indépendant |
 
-`pnpm contracts:generate` régénère les types et OpenAPI après modification du schéma. `pnpm check` contrôle leur synchronisation, OpenAPI, la compilation, les types et les tests. `pnpm build` compile les trois packages.
+`pnpm contracts:generate` régénère les types et OpenAPI après modification du schéma. `pnpm check` contrôle Biome (lint, format et imports), leur synchronisation, OpenAPI, la compilation, les types et les tests. `pnpm build` compile les trois packages. `pnpm lint` vérifie le code ; `pnpm lint:fix` applique les corrections automatiques sûres et `pnpm format` reformate les fichiers.
 
 ## Documentation
 

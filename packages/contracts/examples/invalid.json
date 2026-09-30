@@ -28,9 +28,7 @@
     "schema": "AnalyzeRequest",
     "data": {
       "content": "x",
-      "tools": [
-        "shell"
-      ]
+      "tools": ["shell"]
     },
     "status": 400
   },
@@ -39,10 +37,7 @@
     "schema": "AnalyzeRequest",
     "data": {
       "content": "x",
-      "tools": [
-        "jsluice",
-        "jsluice"
-      ]
+      "tools": ["jsluice", "jsluice"]
     },
     "status": 400
   },
@@ -84,9 +79,7 @@
     "schema": "AnalyzeRequest",
     "data": {
       "content": "x",
-      "tools": [
-        "domains"
-      ]
+      "tools": ["domains"]
     },
     "status": 422
   },
@@ -95,9 +88,7 @@
     "schema": "AnalyzeRequest",
     "data": {
       "content": "x",
-      "reference_domains": [
-        "*.example.com"
-      ]
+      "reference_domains": ["*.example.com"]
     },
     "status": 400
   },
@@ -485,9 +476,7 @@
           "operation_type": "query",
           "name": "Profile",
           "variables": [],
-          "root_fields": [
-            "profile"
-          ],
+          "root_fields": ["profile"],
           "document_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
           "endpoint_id": "ep_example_01"
         }
@@ -660,9 +649,7 @@
           "operation_type": "query",
           "name": "Profile",
           "variables": [],
-          "root_fields": [
-            "profile"
-          ],
+          "root_fields": ["profile"],
           "document_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
           "endpoint_id": "missing"
         }

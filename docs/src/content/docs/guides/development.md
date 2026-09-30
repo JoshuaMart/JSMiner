@@ -62,11 +62,16 @@ JSON Schema contrôle les structures, types, enums et bornes. `validateContract`
 
 | Commande | Vérification |
 | --- | --- |
-| `pnpm check` | Génération à jour, OpenAPI, compilation, types et tests |
+| `pnpm check` | Biome, génération à jour, OpenAPI, compilation, types et tests |
+| `pnpm lint` | Lint, format et ordre des imports ; avertissements refusés |
+| `pnpm lint:fix` | Corrections automatiques sûres de Biome |
+| `pnpm format` | Formatage automatique |
 | `pnpm build` | Compilation des trois packages |
 | `pnpm typecheck` | Types des trois packages |
 | `pnpm test` | Tests sur le code compilé ; exécuter `pnpm build` avant |
 | `docker build --platform linux/amd64 --target validate -t jsminer-phase1:validation .` | Installation verrouillée et vérifications sur Linux amd64 |
+
+Biome **2.5.14** est épinglé avec le preset `recommended`. Sa [configuration](https://biomejs.dev/guides/configure-biome/) est dans `biome.json` : code, tests, scripts JavaScript et JSON du service sont contrôlés. Le workspace documentaire, les sorties compilées, les fichiers privés `.local/` et les dépendances sont exclus. Les types et OpenAPI générés restent contrôlés par `contracts:check`, sans reformatage par Biome. La CI et le Dockerfile exécutent `pnpm check`, donc le lint y est bloquant.
 
 ## Plateformes et déploiement
 
