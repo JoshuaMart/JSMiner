@@ -1,90 +1,64 @@
 ---
 title: Modèle de résultats
-description: Sémantique des observations, provenance, regroupement et limites d’interprétation.
+description: Champs des observations, provenance et règles de regroupement.
 ---
 
 ## Champs communs
 
-Chaque observation possède un `id`, une `confidence` (`low`, `medium`, `high`) et un tableau `evidence`. L’identifiant est dérivé de l’identité canonique de l’observation dans le projet ; il est stable pour le même contenu et la même configuration. Il ne sert jamais de droit d’accès.
+Chaque observation possède un `id` stable dans son projet, une `confidence` (`low`, `medium`, `high`) et des `evidence`. La confiance décrit la preuve statique, pas la gravité d’une vulnérabilité ou la validité d’un secret.
 
-Une preuve comporte `tool`, `module_path`, `representation` et `location`. La représentation désigne les octets effectivement analysés : `original`, `webcrack` ou `wakaru`. Le chemin appartient au manifeste du handle. `location` vaut `null` ou contient des offsets UTF-8 `start_byte` inclusif et `end_byte` exclusif, relativement à ce module. L’adaptateur convertit explicitement les positions exprimées dans une autre unité.
+Une preuve contient `tool`, `module_path`, `representation` (`original`, `webcrack`, `wakaru`) et `location`. La position est `null` si inconnue, sinon `{ start_byte, end_byte }` en octets UTF-8, borne finale exclue, dans le module référencé. Une position transformée n’est pas une position dans l’original.
 
-Les positions sur un module reconstruit ne sont pas annoncées comme des positions originales. Plusieurs preuves peuvent justifier la même observation. Les limites de preuves et la disponibilité des sources sont visibles, jamais remplacées par des coordonnées inventées.
+Les observations identiques sont regroupées en conservant leurs preuves. Les [statuts et limites de réponse](/reference/api/#statuts-et-couverture) indiquent les éventuelles pertes.
 
 ## Endpoints
 
 | Champ | Sens |
 | --- | --- |
-| `value` | URL ou chemin statique observé, avec masquage des valeurs sensibles |
-| `resolved_url` | URL absolue dérivée d’une base explicite, ou `null` |
-| `method` | Méthode HTTP identifiée, ou `null` si inconnue |
+| `value` | URL ou chemin observé, valeurs sensibles masquées |
+| `resolved_url` | URL résolue avec `base_url`, ou `null` |
+| `method` | Méthode identifiée, ou `null` |
 | `kind` | `http_call`, `navigation`, `resource` ou `literal` |
-| `dynamic` | Une portion dépend d’une expression inconnue |
-| `query_params` | Noms de paramètres query, sans leurs valeurs |
-| `body_params` | Noms de propriétés du corps identifiées, sans leurs valeurs |
+| `dynamic` | Présence d’une expression inconnue |
+| `query_params` / `body_params` | Noms des paramètres, sans valeurs |
 
-Un chemin trouvé dans un appel réseau apporte une preuve différente d’une chaîne isolée. Une méthode inconnue ne devient pas automatiquement `GET`. Le défaut d’un appel `fetch` sans options peut en revanche être reconnu par l’adaptateur.
+Les valeurs query sont masquées et les identifiants de l’autorité URL supprimés. La casse des chemins et les caractères réservés sont préservés. Une méthode inconnue ne devient pas automatiquement `GET` ; le défaut de `fetch` peut être reconnu.
 
-Les valeurs inconnues restent marquées comme dynamiques. Les URL observées sont normalisées sans changer la casse du chemin ni décoder les caractères réservés. Les valeurs des paramètres query sont masquées dans l’API ; leurs noms sont conservés. Les identifiants utilisateur dans l’autorité URL sont supprimés. Toute autre valeur reconnue comme secret est masquée avant sérialisation.
-
-Le regroupement utilise le type, la méthode, la forme du chemin, les noms de paramètres et les parties dynamiques. Deux méthodes différentes ou deux formes dynamiques différentes restent distinctes. Les représentations ne fusionnent pas leurs sources : elles ajoutent des preuves au même résultat.
+Le regroupement tient compte du type, de la méthode, du chemin, des paramètres et des parties dynamiques. Une chaîne isolée reste une preuve moins forte qu’un appel réseau reconnu.
 
 ## Secrets potentiels
 
-### Détecteurs intégrés
-
-Le profil par défaut utilise **TruffleHog comme détecteur principal et jsluice en complément** ; aucun moteur de détection généraliste n’est réécrit dans JSMiner.
-
-| Outil | Responsabilité dans JSMiner |
-| --- | --- |
-| [TruffleHog](https://github.com/trufflesecurity/trufflehog) | Détecteurs existants appliqués aux fichiers de l’analyse, via un binaire isolé et une sortie JSON normalisée |
-| [jsluice](https://github.com/BishopFox/jsluice) | Matchers sur la structure JavaScript, en complément de son extraction d’endpoints |
-
-L’original et les représentations transformées sont inspectés : une désobfuscation peut rendre visibles des chaînes absentes en clair dans l’entrée. Les résultats sont regroupés par famille normalisée et empreinte de valeur, en conservant les preuves de chaque détecteur. La même valeur trouvée deux fois ne devient pas deux secrets distincts pour la même famille. Les alias GitHub, clés API Google/Firebase et AWS sont normalisés ; les autres familles conservent leur nom de détecteur en minuscules. Une identité composite et une clé isolée ne sont pas fusionnées sans correspondance exacte de leurs valeurs.
-
-Le mode de fichiers locaux de TruffleHog est utilisé avec vérification et recherche de mises à jour désactivées (`--no-verification`, `--no-update`), dans un worker sans réseau. Ces options sont documentées dans sa [référence CLI](https://github.com/trufflesecurity/trufflehog#usage). Les résultats non vérifiés sont conservés : filtrer seulement les résultats `verified` viderait artificiellement une analyse hors ligne. La détection ne teste aucun identifiant auprès d’un fournisseur.
-
-Les faux positifs et les limites du mode non vérifié sont évalués sur des fixtures ; aucune promesse de rappel supérieur n’est faite avant comparaison. Le budget de TruffleHog est distinct de celui de jsluice. Les champs bruts pouvant contenir des valeurs ou extraits sont filtrés dans l’adaptateur.
-
-### Format normalisé
+jsluice et TruffleHog contribuent à cette catégorie. TruffleHog fonctionne sans vérification réseau. Les résultats sont regroupés par famille normalisée et empreinte des valeurs, y compris lorsqu’ils viennent de représentations différentes.
 
 | Champ | Sens |
 | --- | --- |
 | `kind` | Famille de détection |
-| `rule_id` | Règle principale qualifiée par outil, versionnée avec le moteur |
-| `masked_value` | Marqueur `[REDACTED]` ; aucune valeur originale |
-| `fingerprint` | HMAC-SHA-256 de la valeur, avec clé propre au projet |
-| `validation` | Toujours `not_performed` en v0.1 |
+| `rule_id` | Règle principale qualifiée par outil |
+| `masked_value` | Toujours `[REDACTED]` |
+| `fingerprint` | HMAC-SHA-256 propre au projet |
+| `validation` | Toujours `not_performed` |
 
-Le HMAC permet de regrouper les occurrences sans publier la valeur ou un hash simple susceptible de faciliter la recherche de petites valeurs. La version de clé entre dans l’identité de la vue normalisée. Les valeurs brutes restent confinées aux artefacts privés et au traitement interne.
+Les alias GitHub, Google/Firebase et AWS sont normalisés ; les autres familles gardent leur nom de détecteur en minuscules. Une identité composite n’est pas fusionnée avec une clé isolée sans correspondance exacte des valeurs.
 
-Pour un secret, chaque preuve ajoute son propre `rule_id`, qualifié par outil, afin de conserver les règles d’origine après fusion. Le `rule_id` principal est celui de la preuve à plus forte confiance, puis le premier identifiant lexical en cas d’égalité. `evidence[].tool` permet de distinguer `trufflehog` de `jsluice`. La position reste `null` si l’outil ne fournit pas d’offset fiable dans le module conservé. Lorsqu’il faut limiter les preuves à cinq, une preuve par couple détecteur/règle est retenue en priorité et `evidence_count` signale la perte.
+Chaque preuve ajoute son `rule_id`. La règle principale vient de la preuve à plus forte confiance, puis du premier identifiant lexical en cas d’égalité. Si les preuves doivent être limitées, un couple détecteur/règle distinct est retenu en priorité.
 
-Le nom d’une variable, la structure d’une valeur et son contexte peuvent étayer une confiance. L’entropie seule ne prouve pas qu’il s’agit d’un secret. Aucune tentative d’utilisation n’est effectuée. La consultation du module nécessite `source:read`, car le source peut contenir la valeur originale.
+Le HMAC permet le regroupement sans publier de hash simple du secret. Sa stabilité dépend de la clé persistante du stockage. Les valeurs originales restent accessibles dans les sources avec `source:read`.
 
 ## Opérations GraphQL
-
-L’extracteur interne examine des documents statiques présents dans des chaînes ou templates reconnus. Il utilise un parseur GraphQL pour distinguer la syntaxe des simples ressemblances textuelles. Il ne reçoit pas de schéma distant et ne déclenche aucune introspection.
 
 | Champ | Sens |
 | --- | --- |
 | `operation_type` | `query`, `mutation` ou `subscription` |
-| `name` | Nom de l’opération, ou `null` si anonyme |
-| `variables` | Liste de `{ name, type }` ; aucune valeur par défaut publiée |
-| `root_fields` | Noms des champs de premier niveau identifiés, sans arguments |
-| `document_hash` | SHA-256 d’une représentation canonique interne du document |
-| `endpoint_id` | Référence à un endpoint conservé dans la réponse si l’association est prouvée, sinon `null` |
+| `name` | Nom, ou `null` pour une opération anonyme |
+| `variables` | `{ name, type }`, sans valeurs par défaut |
+| `root_fields` | Champs de premier niveau, sans arguments |
+| `document_hash` | SHA-256 du document canonique interne |
+| `endpoint_id` | Toujours `null` dans l’extracteur actuel |
 
-Les fragments seuls ne deviennent pas des opérations. Les documents incomplets ou interpolés qui ne peuvent pas être analysés statiquement entraînent un avertissement, pas une reconstruction inventée. Un hash de requête persistée sans document ne permet pas d’en déduire l’opération. Le document GraphQL complet reste accessible seulement dans les sources.
+Le parseur traite les documents statiques, sans schéma distant. Les fragments seuls ne sont pas des opérations. Un document interpolé ou incomplet donne un avertissement ; un hash de requête persistée ne permet pas d’en reconstituer le contenu.
 
 ## Sous-domaines
 
-Un sous-domaine est un nom observé strictement descendant d’un domaine de `reference_domains`. Pour `example.com`, `api.example.com` est admissible ; `example.com` lui-même et `example.com.other.test` ne le sont pas. La comparaison se fait sur les labels DNS normalisés, pas sur une sous-chaîne.
+Le résultat contient `hostname` et `reference_domain`. Il retient uniquement les descendants stricts d’une racine fournie : pour `example.com`, `api.example.com` est accepté, mais pas `example.com` ni `example.com.other.test`.
 
-Le résultat expose `hostname` et `reference_domain`. Si plusieurs racines correspondent, retenir la plus spécifique. Les adresses IP, wildcards et noms incomplets sont exclus. Il n’y a ni résolution DNS ni affirmation de propriété. Avec `content`, un domaine ne peut pas être déduit de l’origine d’une capture non fournie.
-
-## Confiance et exhaustivité
-
-`high` signifie qu’une règle structurée fournit une preuve directe ; `medium` désigne une reconstruction statique partielle ; `low` une observation ambiguë. Ce niveau qualifie la détection, pas la gravité d’une vulnérabilité ni la validité d’un identifiant.
-
-Une observation peut subsister quand un autre outil échoue. Une catégorie vide avec `coverage: complete` signifie uniquement « aucun résultat selon les traitements exécutés ». Une catégorie `not_requested`, `partial` ou `failed` ne permet pas cette conclusion.
+La comparaison utilise les labels DNS normalisés ; la racine la plus spécifique est retenue. IP, wildcards et noms incomplets sont exclus. Aucune résolution DNS n’est effectuée.

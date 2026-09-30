@@ -66,7 +66,12 @@ export async function capture(
   const deadline = performance.now() + timeoutMs;
   const target = new URL(url);
   const rule = config.capture.origins.find((r) => r.origin === target.origin);
-  if (!rule || target.username || target.password || !['http:', 'https:'].includes(target.protocol))
+  if (
+    (config.capture.mode === 'allowlist' && !rule) ||
+    target.username ||
+    target.password ||
+    !['http:', 'https:'].includes(target.protocol)
+  )
     throw new ServiceError(403, 'destination_denied');
   const controller = new AbortController();
   const abort = () => controller.abort(new ServiceError(503, 'analysis_cancelled'));
@@ -107,7 +112,7 @@ export async function capture(
         (a) =>
           !isIP(a.address) ||
           isIP(a.address) !== a.family ||
-          (!rule.allow_private && !isPublicAddress(a.address)),
+          (!rule?.allow_private && !isPublicAddress(a.address)),
       )
     )
       throw new ServiceError(403, 'destination_denied');

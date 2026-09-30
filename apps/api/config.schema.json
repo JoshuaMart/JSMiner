@@ -217,6 +217,11 @@
       "additionalProperties": false,
       "default": {},
       "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["public", "allowlist"],
+          "description": "Defaults to public, or allowlist when a nonempty origins list is provided."
+        },
         "origins": {
           "type": "array",
           "default": [],

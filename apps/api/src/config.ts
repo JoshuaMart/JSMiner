@@ -10,7 +10,11 @@ export interface ServiceConfig {
   artifact_directory?: string;
   worker_image: string;
   offline_worker_image: string;
-  capture: { origins: { origin: string; allow_private: boolean }[]; wire_bytes: number };
+  capture: {
+    mode: 'public' | 'allowlist';
+    origins: { origin: string; allow_private: boolean }[];
+    wire_bytes: number;
+  };
   cache: { enabled: boolean; retention_ms: number; max_bytes: number };
   tokens: { sha256: string; project_id: string; permissions: Permission[] }[];
   budgets: {
@@ -47,6 +51,8 @@ const validate = new Ajv2020({
 export function parseConfig(value: unknown, baseDirectory = process.cwd()): ServiceConfig {
   const copy: unknown = structuredClone(value);
   if (!validate(copy)) throw new Error('Invalid service configuration. Check config.schema.json.');
+  // Keep existing nonempty allowlists restrictive when upgrading an older configuration.
+  copy.capture.mode ??= copy.capture.origins.length ? 'allowlist' : 'public';
   if (new Set(copy.tokens.map((t) => t.sha256)).size !== copy.tokens.length)
     throw new Error('Duplicate token digests in configuration.');
   if (

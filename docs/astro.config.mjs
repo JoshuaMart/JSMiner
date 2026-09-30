@@ -2,7 +2,6 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
-// https://astro.build/config
 export default defineConfig({
 	integrations: [
 		starlight({
@@ -13,12 +12,27 @@ export default defineConfig({
 			sidebar: [
 				{ label: 'Accueil', slug: 'index' },
 				{
-					label: 'Le projet',
+					label: 'Démarrer',
 					items: [
-						{ label: 'Vision et périmètre', slug: 'guides/vision' },
-						{ label: 'Feuille de route', slug: 'guides/roadmap' },
-						{ label: 'Développement', slug: 'guides/development' },
+						{ label: 'Installation', slug: 'guides/quickstart' },
+						{ label: 'Exemples de requêtes', slug: 'guides/analysis' },
+					],
+				},
+				{
+					label: 'Référence',
+					items: [
+						{ label: 'Configuration', slug: 'reference/configuration' },
+						{ label: 'API HTTP', slug: 'reference/api' },
+						{ label: 'Modèle de résultats', slug: 'reference/results' },
+						{ label: 'Outils intégrés', slug: 'reference/tools' },
+					],
+				},
+				{
+					label: 'Exploiter et contribuer',
+					items: [
 						{ label: 'Exploitation', slug: 'guides/operations' },
+						{ label: 'Développement', slug: 'guides/development' },
+						{ label: 'Tests et qualification', slug: 'reference/qualification' },
 					],
 				},
 				{
@@ -28,25 +42,7 @@ export default defineConfig({
 						{ label: 'Cache et sources', slug: 'architecture/storage' },
 					],
 				},
-				{
-					label: 'Référence',
-					items: [
-						{ label: 'Contrat API', slug: 'reference/api' },
-						{ label: 'Modèle de résultats', slug: 'reference/results' },
-						{ label: 'Validation phase 1', slug: 'reference/phase-1-validation' },
-						{ label: 'Validation phase 2', slug: 'reference/phase-2-validation' },
-						{ label: 'Validation phase 3', slug: 'reference/phase-3-validation' },
-						{ label: 'Validation phase 4', slug: 'reference/phase-4-validation' },
-						{ label: 'Validation phase 5', slug: 'reference/phase-5-validation' },
-					],
-				},
-				{
-					label: 'Étude préalable',
-					items: [
-						{ label: 'Outils et inspirations', slug: 'research/tools' },
-						{ label: 'Retour sur le prototype', slug: 'research/prototype' },
-					],
-				},
+				{ label: 'Limitations et après v0.1', slug: 'guides/limitations' },
 			],
 		}),
 	],

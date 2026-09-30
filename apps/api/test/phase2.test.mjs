@@ -166,7 +166,7 @@ test('content yields a complete empty analysis, immutable original and UTF-8 rea
         method: 'POST',
         url: '/analyze',
         headers: auth(),
-        payload: { url: 'https://example.invalid/bundle.js' },
+        payload: { url: 'http://127.0.0.1/bundle.js' },
       })
     ).statusCode,
     403,

@@ -118,7 +118,7 @@ const originConfig = (origin, extra = {}) =>
 const rejects = (promise, status, code) =>
   assert.rejects(promise, (e) => e.status === status && e.code === code);
 
-test('URL capture is denied by default, exact-origin scoped and private-address opt-in', async (t) => {
+test('Private URL capture requires an exact-origin opt-in', async (t) => {
   const { origin, requests } = await server(t, (_req, res) => res.end('const x = 1;'));
   await rejects(
     capture(`${origin}/x`, parseConfig(raw), signal(), 1000),

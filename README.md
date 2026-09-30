@@ -1,92 +1,32 @@
 # JSMiner
 
-Service TypeScript d’analyse statique de JavaScript, avec résultats compacts et consultation ciblée des sources.
+Service privé d’analyse statique de JavaScript : endpoints, secrets potentiels, opérations GraphQL et sous-domaines. Les résultats sont compacts ; les sources se consultent séparément par `handle`.
 
-**Phase 5 : qualification technique et exploitation disponibles.** Node.js 24.21.0, pnpm 10.33.0, Fastify et SQLite. `POST /analyze` accepte `content` ou une `url` autorisée côté serveur, enchaîne webcrack et Wakaru, puis applique jsluice, TruffleHog et les extracteurs GraphQL/domaines dans des conteneurs isolés. Les étapes réussies sont mises en cache par contenu, image immuable et profil de traitement ; chaque requête publie un nouveau handle. Les captures URL sont désactivées tant qu’aucune origine n’est configurée.
+## Démarrer
 
-## Démarrer le service
-
-Installer pnpm 10.33.0 et disposer d’un moteur Docker local, puis, depuis la racine :
+Avec pnpm **10.33.0** et Docker disponibles, depuis la racine :
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm check
+pnpm build
 pnpm worker:build
-pnpm test:workers
 pnpm config:init
-JSMINER_CONFIG="$PWD/.local/config.json" pnpm dev
+JSMINER_CONFIG="$PWD/.local/config.json" pnpm --filter @jsminer/api start
 ```
 
-pnpm utilise le Node.js épinglé dans le workspace. Le serveur écoute par défaut sur `127.0.0.1:3000`. La configuration et le jeton créés dans `.local/` sont privés et ignorés par Git. L’initialisation refuse d’écraser ce répertoire.
-
-Dans un autre terminal :
-
-```sh
-curl --fail -H "Authorization: Bearer $(cat .local/token)" http://127.0.0.1:3000/health
-```
-
-Réponse attendue : `{"status":"ok","phase":3,"storage":"ready"}`. Arrêter le service avec `Ctrl+C`.
-
-Pour analyser un extrait fourni localement :
-
-```sh
-curl --fail -H "Authorization: Bearer $(cat .local/token)" \
-  -H 'Content-Type: application/json' \
-  --data '{"content":"fetch(\"/api/profile\");","tools":["jsluice"],"base_url":"https://example.test/"}' \
-  http://127.0.0.1:3000/analyze
-```
-
-Le `handle` permet de lister `/source/<handle>` et de lire `/source/<handle>/original/bundle.js`. Omettre `tools` sélectionne webcrack, Wakaru, jsluice, TruffleHog et GraphQL ; les domaines sont ajoutés si `reference_domains` est renseigné. Une sélection explicite remplace ce profil. Les images absentes sont signalées `skipped / tool_unavailable`. La couverture décrit les détecteurs exécutés, pas une garantie d’exhaustivité.
-
-## Organisation
-
-| Chemin | Contenu |
-| --- | --- |
-| `apps/api` | Serveur HTTP, authentification, stockage privé et orchestration |
-| `packages/contracts/schema.json` | Contrats canoniques JSON Schema 2020-12 |
-| `packages/contracts/openapi.json` | OpenAPI 3.1.1 généré |
-| `packages/contracts/src` | Types générés, validation et invariants UTF-8 |
-| `packages/contracts/examples` | Exemples valides/invalides et vecteurs de hash |
-| `packages/adapters` | Superviseur Docker et interfaces des adaptateurs |
-| `workers/node` | webcrack, Wakaru, TruffleHog et extracteurs statiques, dépendances verrouillées |
-| `workers/jsluice` | Worker statique Go, dépendances et image épinglées |
-| `docs` | Site Astro/Starlight avec son workspace indépendant |
-
-`pnpm contracts:generate` régénère les types et OpenAPI après modification du schéma. `pnpm check` contrôle Biome (lint, format et imports), leur synchronisation, OpenAPI, la compilation, les types et les tests. `pnpm build` compile les trois packages. `pnpm lint` vérifie le code ; `pnpm lint:fix` applique les corrections automatiques sûres et `pnpm format` reformate les fichiers.
+Le workspace sélectionne Node.js **24.21.0**. L’API écoute sur `127.0.0.1:3000`. Configuration et jeton sont dans `.local/` ; l’initialisation refuse d’écraser un répertoire existant.
 
 ## Documentation
 
-```sh
-cd docs
-pnpm install --frozen-lockfile
-pnpm dev
-```
+- [Installation](docs/src/content/docs/guides/quickstart.md)
+- [Exemples de requêtes](docs/src/content/docs/guides/analysis.md)
+- [Configuration](docs/src/content/docs/reference/configuration.md)
+- [API HTTP](docs/src/content/docs/reference/api.md) et [résultats](docs/src/content/docs/reference/results.md)
+- [Exploitation](docs/src/content/docs/guides/operations.md) et [développement](docs/src/content/docs/guides/development.md)
+- [Limitations et après v0.1](docs/src/content/docs/guides/limitations.md)
 
-Compiler le site avec `pnpm build` depuis `docs/`.
+Le site a son propre workspace : `pnpm --dir docs install --frozen-lockfile`, puis `pnpm --dir docs dev`.
 
-- [Développement et configuration](docs/src/content/docs/guides/development.md)
-- [Qualification de phase 5](docs/src/content/docs/reference/phase-5-validation.md)
-- [Exploitation](docs/src/content/docs/guides/operations.md)
-- [Rapport de validation de phase 4](docs/src/content/docs/reference/phase-4-validation.md)
-- [Rapport de validation de phase 3](docs/src/content/docs/reference/phase-3-validation.md)
-- [Rapport de validation de phase 2](docs/src/content/docs/reference/phase-2-validation.md)
-- [Rapport de validation de phase 1](docs/src/content/docs/reference/phase-1-validation.md)
-- [Contrat API](docs/src/content/docs/reference/api.md)
-- [Pipeline et isolation](docs/src/content/docs/architecture/pipeline.md)
-- [Feuille de route](docs/src/content/docs/guides/roadmap.md)
+## Vérifier
 
-J1, J2 et J3 sont validés. La convention Fingerprinter a été vérifiée sur son code : SHA-256 sans préfixe du corps CDP complet, après décodage éventuel du base64 (commit `32142b2`). Sa réutilisation est conditionnelle ; JSMiner conserve un hash du contenu intégral. Voir le rapport de validation.
-
-
-## Qualification et purge
-
-```sh
-pnpm qualify:build
-pnpm qualify
-pnpm qualify:stress
-pnpm qualify:clean
-# Après arrêt du service et avec les fichiers compilés :
-JSMINER_CONFIG="$PWD/.local/config.json" pnpm storage:purge
-```
-
-Le [banc de qualification](qualification/README.md) compare huit profils sur neuf fixtures synthétiques ; ses résultats ne constituent pas une mesure générale de détection. Les images de production doivent avoir été construites avec `pnpm worker:build` et le service avec `pnpm build`. Le workflow manuel `v0.1 qualification` reproduit les vérifications. J5 est validé avec la revue et les corrections du banc de phase 5 ; aucune version n’est publiée par ces commandes.
+`pnpm check` contrôle lint, contrats, compilation, types et tests locaux. `pnpm test:workers` ajoute les intégrations Docker. Le [banc de qualification](qualification/README.md) mesure qualité et ressources sur un corpus synthétique.

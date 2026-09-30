@@ -163,7 +163,7 @@ export function buildApp(configuration: unknown, options: EngineOptions = {}) {
       return reply
         .code(503)
         .send(errorBody(request.id, 'storage_unavailable', 'Stockage indisponible.'));
-    return { status: 'ok', phase: 5, storage: 'ready' };
+    return { status: 'ok', storage: 'ready' };
   });
 
   app.post(

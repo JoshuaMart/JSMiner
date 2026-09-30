@@ -82,6 +82,7 @@ test('health verifies SQLite and requires analysis:read', async (t) => {
   const r = await app.inject({ url: '/health', headers: headers(reader) });
   assert.equal(r.statusCode, 200);
   assert.equal(validateContract('HealthResponse', r.json()).ok, true);
+  assert.deepEqual(r.json(), { status: 'ok', storage: 'ready' });
   assert.equal(r.headers['cache-control'], 'no-store');
 });
 test('analysis authorizes before parsing and never executes a script', async (t) => {

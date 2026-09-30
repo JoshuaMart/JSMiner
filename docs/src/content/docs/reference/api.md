@@ -1,17 +1,27 @@
 ---
-title: Contrat API
-description: Contrats v0.1, validation disponible et comportement métier prévu.
+title: Référence API
+description: Champs, réponses, statuts et erreurs du protocole HTTP v0.1.
 ---
+
+Pour les commandes prêtes à utiliser, voir les [exemples de requêtes](/guides/analysis/). Cette page définit le contrat ; `packages/contracts/schema.json` et son validateur sont les sources canoniques, `openapi.json` est généré.
 
 ## Conventions
 
-**Acquisition et cache implémentés en phase 4.** `content` accepte tous les outils documentés ; les lectures `/source` exposent les représentations conservées. Le mode `url` accepte les origines autorisées dans `capture.origins` ; sans configuration, il répond `403 destination_denied`. Un outil dont l’image est absente ou incompatible est signalé `skipped / tool_unavailable`. JSON UTF-8, noms de champs en `snake_case`, dates UTC au format RFC 3339. Toutes les routes nécessitent un jeton Bearer opaque associé à un projet par la configuration serveur. Les droits sont `analysis:write`, `analysis:read` et `source:read`. `POST /analyze` exige les deux premiers droits, les routes `/source` le troisième. Voir le [guide de configuration](/guides/development/).
+JSON UTF-8, champs `snake_case`, dates UTC RFC 3339. Les champs inconnus sont refusés en entrée. Les réponses d’analyse annoncent `schema_version: "0.1"` ; les clients doivent tolérer de nouveaux champs de réponse.
 
-Le contrat machine est `packages/contracts/schema.json`, complété par les invariants de `validateContract` ; `packages/contracts/openapi.json` est généré. Les exemples de réponses métier ci-dessous sont vérifiés comme fixtures du contrat. `GET /health`, authentifié avec `analysis:read`, vérifie réellement SQLite et répond `200` avec les champs `status: "ok"`, `phase: 5`, `storage: "ready"`.
+Toutes les routes exigent `Authorization: Bearer <jeton>`. Le projet est déterminé par la [configuration serveur](/reference/configuration/#jetons-projets-et-droits).
 
-Les champs inconnus sont refusés en entrée. Les clients tolèrent les nouveaux champs de réponse. Une rupture nécessite une nouvelle version de contrat ; la réponse annonce `schema_version: "0.1"`.
+| Route | Permissions |
+| --- | --- |
+| `GET /health` | `analysis:read` |
+| `POST /analyze` | `analysis:write` et `analysis:read` |
+| Routes `/source` | `source:read` |
 
-La v0.1 est synchrone et bornée. Aucun `202` ni endpoint de polling n’est prévu. Le transport doit permettre les 90 secondes de travail et les 10 secondes réservées au nettoyage, avec une marge réseau.
+L’analyse est synchrone. Prévoyez les 90 s de travail et 10 s de nettoyage par défaut, plus une marge réseau. Il n’existe pas de route de polling.
+
+## GET /health
+
+Retourne `{"status":"ok","storage":"ready"}` si SQLite et le superviseur sont disponibles. Ce contrôle ne lance pas de worker.
 
 ## POST /analyze
 
@@ -26,24 +36,14 @@ La v0.1 est synchrone et bornée. Aucun `202` ni endpoint de polling n’est pr�
 | `base_url` | string | Facultatif ; URL HTTP(S) du document, utilisée uniquement pour résoudre les chemins observés |
 | `reference_domains` | string[] | Facultatif ; domaines racines servant à classifier les sous-domaines observés |
 
-Limites complémentaires proposées : URL de 4 096 caractères maximum ; au plus 20 domaines de référence, sans wildcard, normalisés en noms DNS ASCII. Les paramètres de sélection ne constituent aucune autorisation réseau. Les requêtes HTTP compressées sont refusées en v0.1 ; le corps JSON est limité à 64 MiB et `content` est contrôlé après décodage.
 
-Depuis le commit `32142b2`, le hash Fingerprinter brut identifie le corps CDP complet et n’a pas le préfixe `sha256:`. Ajouter ce préfixe pour le transmettre comme assertion sur les mêmes octets ; sinon omettre `script_hash`. Les anciens hashes tronqués à 2 MiB ne doivent pas être réutilisés comme hashes complets. Le serveur le recalcule avant toute consultation du cache et refuse une différence avec `409 script_hash_mismatch`. Voir la [convention de hash](/architecture/storage/).
+Les URL sont limitées à 4 096 caractères ; les domaines de référence à 20 noms DNS ASCII sans wildcard. Le corps JSON est limité à 64 Mio et ne doit pas être compressé. Le mode `url` accepte les destinations publiques par défaut, selon la [politique de capture](/reference/configuration/#capture-url).
 
-`base_url` n’est pas déduite de l’URL du script : un bundle hébergé sur un CDN peut appeler l’origine de la page. Sans base explicite, les endpoints relatifs restent non résolus. Une base ne déclenche jamais de requête.
+`script_hash` est recalculé avant consultation du cache. Pour Fingerprinter, voir la [convention de hash](/architecture/storage/#compatibilité-fingerprinter). `base_url` n’est pas déduite de l’URL du script et ne déclenche aucune requête ; sans elle, les chemins relatifs restent non résolus.
 
-| Identifiant | Fonction |
-| --- | --- |
-| `webcrack` | Transformation et dépliage |
-| `wakaru` | Transformation et dépliage |
-| `jsluice` | Extraction d’endpoints et de secrets potentiels |
-| `trufflehog` | Détection de secrets dans les artefacts locaux, sans vérification réseau |
-| `graphql` | Extracteur interne d’opérations GraphQL statiques |
-| `domains` | Extracteur interne de sous-domaines observés |
+Sans `tools`, le profil comprend `webcrack`, `wakaru`, `jsluice`, `trufflehog`, `graphql`, et `domains` si des domaines de référence sont fournis. Une sélection explicite remplace ce profil. L’ordre de la liste n’impose pas celui d’exécution ; les [outils](/reference/tools/) suivent le [pipeline](/architecture/pipeline/).
 
-Lorsque `tools` est absent, le profil par défaut sélectionne `webcrack`, `wakaru`, `jsluice`, `trufflehog` et `graphql`, puis ajoute `domains` si `reference_domains` contient au moins un domaine. `tools` décrit un ensemble, pas un ordre : si les deux transformateurs sont sélectionnés, le serveur applique webcrack puis Wakaru, avec repli sur l’original si la première transformation échoue. Une sélection explicite remplace le profil par défaut. Une liste de transformateurs seuls est valide : les tableaux de résultats sont vides et leur couverture vaut `not_requested`.
-
-L’extracteur `domains` exige au moins un `reference_domains` lorsqu’il est explicitement sélectionné ; sinon, la requête est refusée avec `422`. Une requête minimale avec seulement `content` reste valide et indique `coverage.subdomains: not_requested`.
+`domains` exige `reference_domains`, sinon `422`. Une sélection de transformateurs seuls est valide et produit des catégories `not_requested`.
 
 ### Exemple de requête
 
@@ -55,11 +55,9 @@ L’extracteur `domains` exige au moins un `reference_domains` lorsqu’il est e
 }
 ```
 
-Le mode URL utilise le même contrat en remplaçant `content` par `url`. L’acquisition doit être autorisée par la politique du serveur. Aucune requête ne suit les observations produites.
-
 ### Exemple de réponse 200
 
-Les versions et durées ci-dessous sont illustratives. Le hash correspond exactement à la chaîne d’entrée ci-dessus.
+Les versions, durées et identifiants sont illustratifs ; le hash correspond à la requête ci-dessus.
 
 ```json
 {
@@ -116,44 +114,41 @@ Les versions et durées ci-dessous sont illustratives. Le hash correspond exacte
 }
 ```
 
-`location: null` signifie que l’adaptateur n’a pas fourni de position fiable. Aucun extrait n’est ajouté pour compenser cette absence. Les règles des observations figurent dans le [modèle de résultats](/reference/results/).
+Les formats de chaque observation et de ses preuves sont définis dans le [modèle de résultats](/reference/results/).
 
 ### Statuts et couverture
 
-| Champ | Valeurs et sens |
+| Champ | Sémantique |
 | --- | --- |
-| `status` | `complete` : tous les traitements demandés terminent sans perte ; `partial` : un résultat utile subsiste avec une erreur ou limite ; `failed` : aucun traitement demandé ne produit de résultat exploitable |
+| `status` | `complete` : traitements terminés sans perte ; `partial` : travail exploitable avec erreur ou limite ; `failed` : aucun traitement exploitable |
+| `coverage[category]` | `complete`, `partial`, `failed` ou `not_requested`, pour les détecteurs sélectionnés |
 | `tools[].status` | `success`, `partial`, `timeout`, `error`, `skipped` |
-| `tools[].error_code` | Code stable ou `null` ; par exemple `tool_timeout`, `output_limit`, `parse_error`, `global_deadline`, `tool_unavailable` |
-| `coverage[category]` | `complete`, `partial`, `failed`, `not_requested` |
-| `cache.status` | `hit` : tous les outils entièrement réutilisés ; `partial_hit` : certains ; `miss` : aucun outil entièrement réutilisé |
-| `truncation` | Booléen et codes de limite atteinte : `response_bytes`, `finding_count`, `evidence_count`, `artifact_bytes`, `module_count`, `field_bytes` |
+| `tools[].error_code` | Code stable ou `null` ; image absente/incompatible : `tool_unavailable` |
+| `tools[].version` | Version/build exact, ou `null` si indisponible |
+| `tools[].duration_ms` | Travail de la requête courante ; `0` pour une étape entièrement réutilisée |
+| `tools[].modules_analyzed` / `modules_available` | Modules analysés/proposés ; `null` pour les transformateurs |
+| `tools[].input_path` | Entrée du transformateur dans le manifeste ; absent pour les extracteurs |
+| `tools[].cache_hit` | `true` seulement si toutes les entrées de l’outil sont réutilisées |
+| `cache.status` | `hit` : tous les outils entièrement réutilisés ; `partial_hit` : certains ; `miss` : aucun |
+| `warnings` | Objets `{ code, tool }` ; `tool: null` pour un avertissement global |
 
-Une extraction terminée sans observation est un succès. `complete` décrit l’exécution demandée, sans garantir la découverte de tout comportement possible. Une transformation demandée qui échoue rend la couverture des catégories extraites au plus `partial`, même si l’original a été analysé intégralement. Une catégorie sans résultat exploitable après échec de son extracteur vaut `failed`. Une catégorie non sélectionnée vaut `not_requested`.
+Chaque outil demandé a une entrée, même s’il n’a pas démarré. Un traitement en cache garde `success` ; sa durée exclut la lecture et la vérification du cache. Une réutilisation partielle des modules peut rester comptée comme `miss` pour cet outil.
 
-La réutilisation se fait par entrée effective de chaque outil. `cache_hit` vaut `true` seulement si toutes ses entrées ont été réutilisées avec succès ; une réutilisation partielle des modules peut donc rester comptée comme `miss` pour cet outil. Les durées des outils entièrement réutilisés valent `0` et excluent le coût de lecture et de vérification du cache.
+Une extraction vide réussie est `complete`, sans garantie d’exhaustivité. L’échec d’une transformation rend au plus `partial` la couverture des catégories extraites. Avec deux détecteurs de secrets, un échec et une réussite donnent `coverage.secrets: partial` ; deux échecs sans résultat donnent `failed`.
 
-Un traitement sur cache garde un statut `success` et indique `cache_hit: true`. Les erreurs ne suppriment pas les observations déjà validées. Un outil connu mais indisponible est `skipped` avec `tool_unavailable`. Chaque outil demandé possède une entrée, même s’il n’a pas démarré.
-
-`tools[].version` contient la version ou l’identifiant de build exact, ou `null` si indisponible. `duration_ms` mesure le travail de la requête courante, hors attente ; il vaut 0 pour une étape entièrement réutilisée. Pour un extracteur, `modules_analyzed` compte les modules effectivement analysés et `modules_available` ceux proposés par le pipeline ; ces deux champs valent `null` pour un transformateur. Les avertissements sont des objets `{ code, tool }`, où `code` est un identifiant stable et `tool` un identifiant d’outil ou `null` pour un avertissement global.
-
-Pour un transformateur, le champ supplémentaire `input_path` référence l’entrée effective dans le manifeste : `original/bundle.js` ou, pour Wakaru après webcrack, `webcrack/bundle.js`. Le repli est signalé par `{ "code": "fallback_to_original", "tool": "wakaru" }`. Les extracteurs parcourant plusieurs représentations n’exposent pas ce champ unique.
-
-`coverage.secrets` agrège les détecteurs demandés : avec jsluice et TruffleHog, l’échec de l’un rend la couverture `partial` si l’autre termine, même sans observation. Si les deux échouent sans résultat exploitable, elle vaut `failed`. Avec un seul détecteur sélectionné, `complete` décrit uniquement sa couverture ; les entrées `tools` indiquent lequel a travaillé.
-
-Le statut global est `partial` dès qu’au moins un traitement réussit ou publie un résultat exploitable et qu’une autre étape échoue ou est omise. Il est `failed` si toutes les étapes demandées échouent ou sont omises sans résultat exploitable. Ces trois états retournent `200` avec un handle lorsque l’entrée et le manifeste ont pu être conservés. Une erreur d’acquisition ou d’infrastructure utilise les codes HTTP ci-dessous.
+Les trois statuts globaux utilisent HTTP `200` avec un handle si les artefacts ont pu être publiés. Les échecs d’acquisition ou d’infrastructure utilisent les erreurs HTTP ci-dessous.
 
 ### Réponse bornée
 
-Le plafond est de 256 KiB sérialisés. Les limites initiales sont 200 observations par catégorie, 5 preuves par observation et 32 avertissements. Les champs de découverte sont plafonnés à 2 048 octets ; une valeur trop longue est omise avec `field_bytes`, jamais présentée comme une valeur exacte raccourcie.
+Plafonds : **256 Kio** sérialisés, **200 observations par catégorie**, **5 preuves par observation**, **32 avertissements** et **2 048 octets par champ de découverte**. Un champ trop long est omis, pas raccourci.
 
-Le tri est déterministe : confiance décroissante, puis identifiant stable. Le serveur remplit les catégories par tours successifs pour qu’une catégorie ne consomme pas tout le budget. Si nécessaire, il retire des preuves puis des observations, en conservant toujours l’enveloppe et les statuts. Toute perte rend `status: partial`, la couverture concernée `partial` et `truncation.truncated: true`.
+Les résultats sont triés par confiance décroissante puis identifiant stable, et les catégories sont remplies par tours. Une perte rend la réponse et la couverture concernée `partial`, avec `truncation.truncated: true` et un motif : `response_bytes`, `finding_count`, `evidence_count`, `artifact_bytes`, `module_count` ou `field_bytes`.
 
-La v0.1 n’expose pas de pagination des observations omises. Le client peut consulter les modules ; une pagination des résultats fera l’objet d’une extension. Les champs bruts `source`, `context`, documents GraphQL complets et valeurs de secrets ne sont jamais copiés dans cette réponse.
+Il n’y a pas de pagination des observations omises. La réponse ne contient ni code source, ni contexte brut, ni valeur originale de secret.
 
 ## GET /source/:handle
 
-Liste paginée du manifeste, sans code. Paramètres : `limit` entier de 1 à 100, défaut 50 ; `cursor` opaque facultatif. Le curseur est lié au handle et à l’ordre lexicographique des chemins.
+Manifeste sans code. `limit` : 1 à 100, défaut 50 ; `cursor` : opaque, facultatif, lié au handle et à l’ordre des chemins. `next_cursor: null` marque la fin.
 
 ```json
 {
@@ -174,15 +169,16 @@ Liste paginée du manifeste, sans code. Paramètres : `limit` entier de 1 à 100
 }
 ```
 
-`origin` vaut `original`, `webcrack` ou `wakaru` en v0.1. La pagination n’est pas une troncature : `next_cursor` permet de parcourir tout le manifeste conservé.
-
-`parent_path` référence le module d’entrée de la transformation, ou `null` pour l’original. Les modules Wakaru ont pour parent `webcrack/bundle.js` après une préparation réussie, et `original/bundle.js` dans le cas du repli ou d’une sélection de Wakaru seul. Cette chaîne permet de retrouver les étapes sans inclure leur code dans la réponse d’analyse.
+`origin` vaut `original`, `webcrack` ou `wakaru`. `parent_path` désigne l’entrée de transformation, ou `null` pour l’original. Les [règles de conservation](/architecture/storage/#publication-et-handles) décrivent le cycle de vie des sources.
 
 ## GET /source/:handle/:path
 
-`:path` capture tout le chemin logique, segments inclus. Exemple : `/source/ana_example_01/original/bundle.js`. Le serveur valide ce chemin dans le manifeste. Il n’accepte pas de chemin arbitraire du système de fichiers.
+`:path` est un chemin du manifeste, par exemple `original/bundle.js`, jamais un chemin local arbitraire.
 
-Paramètres : `offset` en octets UTF-8, entier positif ou nul, défaut 0 ; `max_bytes` entier de 4 à 65 536, défaut 16 384. L’offset doit correspondre au début d’un caractère ; une valeur invalide retourne `422`. La fin du fragment est ajustée à une frontière UTF-8. À la fin du fichier, la réponse contient une chaîne vide et `next_offset: null` ; au-delà, `416`.
+| Paramètre | Règle |
+| --- | --- |
+| `offset` | Octets UTF-8, défaut 0 ; doit être une frontière de caractère (`422` sinon) |
+| `max_bytes` | De 4 à 65 536, défaut 16 384 ; la fin est ajustée à une frontière UTF-8 |
 
 ```json
 {
@@ -196,7 +192,7 @@ Paramètres : `offset` en octets UTF-8, entier positif ou nul, défaut 0 ; `max_
 }
 ```
 
-`max_bytes` borne les octets source ; l’échappement JSON peut agrandir la réponse de transport. Pour un module volumineux, reprendre avec `offset=next_offset`. Ce découpage évite qu’une ligne minifiée gigantesque contourne une limite exprimée seulement en lignes.
+Reprendre à `next_offset` jusqu’à `null`. À la fin du fichier, le contenu est vide ; au-delà, `416`. `max_bytes` borne le source, pas le surcoût de l’échappement JSON.
 
 ## Erreurs HTTP
 
@@ -217,7 +213,7 @@ Paramètres : `offset` en octets UTF-8, entier positif ou nul, défaut 0 ; `max_
 | `403` | Droit manquant ou `destination_denied` pour une capture refusée |
 | `404` | Handle/module inconnu ou handle appartenant à un autre projet |
 | `409` | `script_hash_mismatch` : hash annoncé différent du contenu reçu |
-| `410` | Handle expiré ou révoqué, tombstone encore connu du propriétaire |
+| `410` | Handle expiré, tombstone encore connu du propriétaire |
 | `413` | Corps ou script trop volumineux ; `capture_too_large` avant décompression, `script_too_large` après décompression |
 | `415` | Type de requête ou compression HTTP non pris en charge |
 | `416` | Offset supérieur à la taille du module |
@@ -228,4 +224,5 @@ Paramètres : `offset` en octets UTF-8, entier positif ou nul, défaut 0 ; `max_
 | `503` | Service indisponible ou arrêt d’un worker impossible à confirmer |
 | `500` | Échec interne de persistance ou de publication |
 
-Les messages d’erreur n’incluent ni code source, ni sorties brutes, ni chemins locaux, ni URL contenant des données sensibles.
+
+Les erreurs n’exposent ni source, ni sortie brute, ni chemin local ni URL sensible. Voir le [diagnostic opérateur](/guides/operations/#vérifier-et-diagnostiquer) pour les actions associées.

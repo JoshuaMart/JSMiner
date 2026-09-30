@@ -1,41 +1,27 @@
 ---
 title: JSMiner
-description: Conception d’un service d’analyse de JavaScript avec résultats structurés et consultation ciblée des sources.
+description: Analyse statique de JavaScript et consultation ciblée des sources.
 hero:
-  tagline: Analyser un bundle. Extraire les informations utiles. Consulter uniquement les modules nécessaires.
+  tagline: Analyser vos scripts JavaScript, consulter les résultats et leurs sources.
   actions:
-    - text: Comprendre le projet
-      link: /guides/vision/
+    - text: Installer
+      link: /guides/quickstart/
       icon: right-arrow
-    - text: Lire le contrat API
-      link: /reference/api/
+    - text: Exemples de requêtes
+      link: /guides/analysis/
       variant: secondary
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+JSMiner extrait des **endpoints, secrets potentiels, opérations GraphQL et sous-domaines**. Il retourne un JSON compact avec la provenance des observations et un `handle` pour consulter les sources séparément.
 
-JSMiner transforme un script fourni ou acquis dans un périmètre autorisé en un inventaire compact : endpoints, secrets potentiels, opérations GraphQL et sous-domaines observés. Les sources restent dans un stockage dédié, consultable module par module grâce à un `handle` opaque.
+Le service privé utilise Node.js, SQLite et des workers Docker isolés. Il peut analyser du contenu fourni ou acquérir une URL autorisée, transformer les bundles et réutiliser les traitements en cache.
 
-<CardGrid>
-  <Card title="Un contrat compact" icon="document">
-    `POST /analyze` retourne des résultats structurés et leur provenance. Aucun code source n’est inclus dans cette réponse.
-  </Card>
-  <Card title="Des traitements indépendants" icon="setting">
-    Chaque outil dispose de son budget. Une transformation qui échoue laisse les résultats des autres traitements disponibles.
-  </Card>
-  <Card title="Des sources à la demande" icon="open-book">
-    Le manifeste liste les modules ; une seconde requête lit un module ou une portion bornée de celui-ci.
-  </Card>
-  <Card title="Un cache reproductible" icon="puzzle">
-    Le hash du script identifie les octets. Les versions, options et artefacts d’entrée identifient l’analyse.
-  </Card>
-</CardGrid>
+## Documentation
 
-## Parcours de lecture
+- [Configuration](/reference/configuration/) : jetons, origines et budgets.
+- [API HTTP](/reference/api/) et [résultats](/reference/results/) : contrat et formats.
+- [Exploitation](/guides/operations/) : diagnostic, purge et sauvegardes.
+- [Développement](/guides/development/) : organisation et vérifications.
+- [Limitations et après v0.1](/guides/limitations/) : couverture et évolutions possibles.
 
-1. [Vision et périmètre](/guides/vision/) : objectifs et limites du produit.
-2. [Pipeline et isolation](/architecture/pipeline/) : TypeScript, runtimes, étapes, budgets et erreurs.
-3. [Contrat API](/reference/api/) et [modèle de résultats](/reference/results/) : échanges et sémantique.
-4. [Cache et sources](/architecture/storage/) : identité, rétention et lecture ciblée.
-5. [Étude des outils](/research/tools/) et [retour sur le prototype](/research/prototype/) : inspirations et limites.
-6. [Feuille de route](/guides/roadmap/) : incréments et critères de validation.
+Les découvertes restent des observations statiques : JSMiner ne teste ni les endpoints ni les secrets détectés.

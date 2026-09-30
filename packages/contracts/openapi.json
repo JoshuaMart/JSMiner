@@ -1641,10 +1641,6 @@
             "type": "string",
             "const": "ok"
           },
-          "phase": {
-            "type": "integer",
-            "const": 5
-          },
           "storage": {
             "type": "string",
             "const": "ready"
@@ -1652,7 +1648,6 @@
         },
         "required": [
           "status",
-          "phase",
           "storage"
         ],
         "title": "HealthResponse"
