@@ -206,6 +206,11 @@
       "maxLength": 256,
       "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_./:@-]*$",
       "default": "jsminer-jsluice:phase2"
+    },
+    "offline_worker_image": {
+      "type": "string",
+      "minLength": 1,
+      "default": "jsminer-offline:phase3"
     }
   }
 }

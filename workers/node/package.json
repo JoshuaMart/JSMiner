@@ -1,0 +1,11 @@
+{
+  "name": "jsminer-offline-workers",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "webcrack": "2.16.0",
+    "wakaru": "1.12.0",
+    "@babel/parser": "7.29.9",
+    "graphql": "17.0.2"
+  }
+}

@@ -61,34 +61,36 @@ Les jalons J1 à J5 sont ordonnés : le jalon précédent est requis pour valide
 - [x] La réponse d’analyse respecte son plafond et ne contient ni code source ni valeur brute de secret.
 - [x] La lecture UTF-8, la pagination, l’isolation entre projets et l’expiration passent les tests d’intégration.
 - [x] Aucun worker ne reste actif après les scénarios d’arrêt ; un nettoyage non confirmé empêche de nouvelles admissions.
-- [x] **J2 validé** — [rapport du 30 septembre 2026](/reference/phase-2-validation/). Le mode URL et le profil complet restent à livrer.
+- [x] **J2 validé** — [rapport du 30 septembre 2026](/reference/phase-2-validation/). Le profil complet est livré en J3 ; le mode URL reste au jalon J4.
 
 ## 3. Ajouter les transformations et extracteurs
 
+**Phase 3 terminée.** Le profil complet hors ligne, ses limites et ses fixtures sont décrits dans le [rapport J3](/reference/phase-3-validation/).
+
 ### 3.1. Transformer les scripts
 
-- [ ] Intégrer webcrack dans son worker Node.js isolé, avec version et options épinglées.
-- [ ] Intégrer Wakaru et la chaîne webcrack → Wakaru sur le code agrégé validé.
-- [ ] Implémenter le repli de Wakaru sur l’original lorsque webcrack échoue, dans le délai global restant.
-- [ ] Conserver les représentations et leurs `parent_path` ; valider les fichiers avant publication.
-- [ ] Déclencher l’extraction sur l’original et les représentations disponibles avec des budgets cumulés par extracteur.
+- [x] Intégrer webcrack dans son worker Node.js isolé, avec version et options épinglées.
+- [x] Intégrer Wakaru et la chaîne webcrack → Wakaru sur le code agrégé validé.
+- [x] Implémenter le repli de Wakaru sur l’original lorsque webcrack échoue, dans le délai global restant.
+- [x] Conserver les représentations et leurs `parent_path` ; valider les fichiers avant publication.
+- [x] Déclencher l’extraction sur l’original et les représentations disponibles avec des budgets cumulés par extracteur.
 
 ### 3.2. Compléter les observations
 
-- [ ] Intégrer TruffleHog sur les artefacts locaux, sans réseau, sans vérification et sans recherche de mises à jour.
-- [ ] Fusionner ses secrets avec ceux de jsluice en conservant empreintes, règles et preuves.
-- [ ] Ajouter l’extracteur GraphQL statique et le traitement explicite des documents incomplets.
-- [ ] Ajouter les sous-domaines observés, classifiés selon `reference_domains`, sans résolution DNS.
-- [ ] Appliquer le profil d’outils par défaut, les sélections explicites et le regroupement déterministe.
+- [x] Intégrer TruffleHog sur les artefacts locaux, sans réseau, sans vérification et sans recherche de mises à jour.
+- [x] Fusionner ses secrets avec ceux de jsluice en conservant empreintes, règles et preuves.
+- [x] Ajouter l’extracteur GraphQL statique et le traitement explicite des documents incomplets.
+- [x] Ajouter les sous-domaines observés, classifiés selon `reference_domains`, sans résolution DNS.
+- [x] Appliquer le profil d’outils par défaut, les sélections explicites et le regroupement déterministe.
 
 ### Jalon J3 — Profil d’analyse complet
 
-- [ ] Les fixtures prises en charge traversent la chaîne et conservent des parents et positions cohérents.
-- [ ] Un échec webcrack laisse Wakaru traiter l’original ; un délai global épuisé donne un statut explicite.
-- [ ] Un détecteur en erreur n’efface pas les observations de l’autre et rend la couverture concernée partielle.
-- [ ] Les fixtures synthétiques de secrets, GraphQL et domaines produisent les résultats attendus sans trafic réseau des workers.
-- [ ] Les plafonds de modules, d’artefacts et de réponse sont respectés et toute perte est signalée.
-- [ ] **J3 validé** — renseigner le commit ou rapport de validation.
+- [x] Les fixtures prises en charge traversent la chaîne et conservent des parents et positions cohérents.
+- [x] Un échec webcrack laisse Wakaru traiter l’original ; un délai global épuisé donne un statut explicite.
+- [x] Un détecteur en erreur n’efface pas les observations de l’autre et rend la couverture concernée partielle.
+- [x] Les fixtures synthétiques de secrets, GraphQL et domaines produisent les résultats attendus sans trafic réseau des workers.
+- [x] Les plafonds de modules, d’artefacts et de réponse sont respectés et toute perte est signalée.
+- [x] **J3 validé** — [rapport du 30 septembre 2026](/reference/phase-3-validation/).
 
 ## 4. Compléter acquisition et cache
 

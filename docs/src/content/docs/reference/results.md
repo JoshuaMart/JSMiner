@@ -31,16 +31,16 @@ Le regroupement utilise le type, la méthode, la forme du chemin, les noms de pa
 
 ## Secrets potentiels
 
-### Détecteurs proposés
+### Détecteurs intégrés
 
-Le profil proposé utilise **TruffleHog comme détecteur principal et jsluice en complément** ; aucun moteur de détection généraliste n’est réécrit dans JSMiner.
+Le profil par défaut utilise **TruffleHog comme détecteur principal et jsluice en complément** ; aucun moteur de détection généraliste n’est réécrit dans JSMiner.
 
 | Outil | Responsabilité dans JSMiner |
 | --- | --- |
 | [TruffleHog](https://github.com/trufflesecurity/trufflehog) | Détecteurs existants appliqués aux fichiers de l’analyse, via un binaire isolé et une sortie JSON normalisée |
 | [jsluice](https://github.com/BishopFox/jsluice) | Matchers sur la structure JavaScript, en complément de son extraction d’endpoints |
 
-L’original et les représentations transformées sont inspectés : une désobfuscation peut rendre visibles des chaînes absentes en clair dans l’entrée. Les résultats sont regroupés par famille normalisée et empreinte de valeur, en conservant les preuves de chaque détecteur. La même valeur trouvée deux fois ne devient pas deux secrets distincts pour la même famille.
+L’original et les représentations transformées sont inspectés : une désobfuscation peut rendre visibles des chaînes absentes en clair dans l’entrée. Les résultats sont regroupés par famille normalisée et empreinte de valeur, en conservant les preuves de chaque détecteur. La même valeur trouvée deux fois ne devient pas deux secrets distincts pour la même famille. Les alias GitHub, clés API Google/Firebase et AWS sont normalisés ; les autres familles conservent leur nom de détecteur en minuscules. Une identité composite et une clé isolée ne sont pas fusionnées sans correspondance exacte de leurs valeurs.
 
 Le mode de fichiers locaux de TruffleHog est utilisé avec vérification et recherche de mises à jour désactivées (`--no-verification`, `--no-update`), dans un worker sans réseau. Ces options sont documentées dans sa [référence CLI](https://github.com/trufflesecurity/trufflehog#usage). Les résultats non vérifiés sont conservés : filtrer seulement les résultats `verified` viderait artificiellement une analyse hors ligne. La détection ne teste aucun identifiant auprès d’un fournisseur.
 
@@ -58,7 +58,7 @@ Les faux positifs et les limites du mode non vérifié sont évalués sur des fi
 
 Le HMAC permet de regrouper les occurrences sans publier la valeur ou un hash simple susceptible de faciliter la recherche de petites valeurs. La version de clé entre dans l’identité de la vue normalisée. Les valeurs brutes restent confinées aux artefacts privés et au traitement interne.
 
-Pour un secret, chaque preuve ajoute son propre `rule_id`, qualifié par outil, afin de conserver les règles d’origine après fusion. Le `rule_id` principal est celui de la preuve à plus forte confiance, puis le premier identifiant lexical en cas d’égalité. `evidence[].tool` permet de distinguer `trufflehog` de `jsluice`. La position reste `null` si l’outil ne fournit pas d’offset fiable dans le module conservé.
+Pour un secret, chaque preuve ajoute son propre `rule_id`, qualifié par outil, afin de conserver les règles d’origine après fusion. Le `rule_id` principal est celui de la preuve à plus forte confiance, puis le premier identifiant lexical en cas d’égalité. `evidence[].tool` permet de distinguer `trufflehog` de `jsluice`. La position reste `null` si l’outil ne fournit pas d’offset fiable dans le module conservé. Lorsqu’il faut limiter les preuves à cinq, une preuve par couple détecteur/règle est retenue en priorité et `evidence_count` signale la perte.
 
 Le nom d’une variable, la structure d’une valeur et son contexte peuvent étayer une confiance. L’entropie seule ne prouve pas qu’il s’agit d’un secret. Aucune tentative d’utilisation n’est effectuée. La consultation du module nécessite `source:read`, car le source peut contenir la valeur originale.
 

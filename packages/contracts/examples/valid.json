@@ -165,7 +165,7 @@
     "schema": "HealthResponse",
     "data": {
       "status": "ok",
-      "phase": 2,
+      "phase": 3,
       "storage": "ready"
     }
   },

@@ -5,11 +5,11 @@ description: Acquisition, traitements indépendants, budgets et gestion des rés
 
 ## TypeScript et runtimes
 
-**TypeScript et Node.js 24 sont retenus pour l’API et l’orchestration.** Le socle Node.js 24.21.0, Fastify et SQLite a passé l’essai HTTP/stockage de [phase 1](/reference/phase-1-validation/). La vérification de types `tsc --noEmit` fait partie de `pnpm check`. Le worker Node.js et sa supervision restent à qualifier lors de leur intégration.
+**TypeScript et Node.js 24 sont retenus pour l’API et l’orchestration.** Le socle Node.js 24.21.0, Fastify et SQLite a passé l’essai HTTP/stockage de [phase 1](/reference/phase-1-validation/). La vérification de types `tsc --noEmit` fait partie de `pnpm check`. Le worker Node.js et sa supervision sont vérifiés par les fixtures de [phase 3](/reference/phase-3-validation/).
 
 Le [README de webcrack](https://github.com/j4k0xb/webcrack) annonce Node.js 22/24 et une dépendance à `isolated-vm`. Utiliser Node.js 24 pour l’API et ce worker limite le nombre de runtimes JavaScript à maintenir et à qualifier. Le worker reste un processus isolé : l’API le pilote au travers du même contrat d’artefacts que les autres outils.
 
-Wakaru utilise un binaire autonome ; jsluice et TruffleHog seront aussi invoqués comme outils externes isolés. Les versions des outils et images seront épinglées lors de leur intégration. Le site documentaire conserve son environnement Astro/pnpm actuel ; pnpm 10.33.0 est épinglé pour le service. Un autre runtime pourra être réévalué si les mesures mettent en évidence un besoin concret.
+Wakaru utilise un binaire autonome ; jsluice et TruffleHog sont également invoqués comme outils externes isolés. Les versions et options sont épinglées dans les workers. Le site documentaire conserve son environnement Astro/pnpm actuel ; pnpm 10.33.0 est épinglé pour le service. Un autre runtime pourra être réévalué si les mesures mettent en évidence un besoin concret.
 
 ## Responsabilités
 
@@ -43,13 +43,13 @@ Client / capture Fingerprinter
 
 webcrack et Wakaru sont complémentaires, avec un recouvrement sur le dépliage et la déminification. Le premier traite notamment certaines obfuscations ; le second récupère une syntaxe lisible à partir de code minifié ou transpilé. [Wakaru documente la possibilité de préparer son entrée avec webcrack](https://github.com/pionxzh/wakaru#works-with-other-tools).
 
-Le profil par défaut sélectionne les deux. Lorsque les deux sont demandés, webcrack traite l’original, puis Wakaru reçoit son code agrégé validé, conservé sous `webcrack/bundle.js`. Wakaru n’est pas relancé séparément sur chaque module de webcrack. Si webcrack échoue ou ne produit aucun code agrégé utilisable, Wakaru reçoit l’original et l’avertissement `fallback_to_original` est enregistré. Le repli reste soumis au délai global ; si ce délai est épuisé, Wakaru est `skipped` avec `global_deadline`.
+Le profil par défaut sélectionne les deux. Lorsque les deux sont demandés, webcrack traite l’original, puis Wakaru reçoit son code agrégé validé et non vide, conservé sous `webcrack/bundle.js`. Wakaru n’est pas relancé séparément sur chaque module de webcrack. Si webcrack échoue ou ne produit aucun code agrégé utilisable, Wakaru reçoit l’original et l’avertissement `fallback_to_original` est enregistré. Le repli reste soumis au délai global ; si ce délai est épuisé, Wakaru est `skipped` avec `global_deadline`.
 
 Si un seul transformateur est sélectionné, il reçoit l’original. Chaque outil conserve son propre budget et son état ; l’échec de webcrack n’annule donc pas Wakaru. Les options de génération doivent préserver un JavaScript accepté par l’étape suivante ; les cas JSX et syntaxes particulières font partie de l’essai d’intégration.
 
 L’extraction sur l’original reste disponible même si tous les transformateurs échouent. Les représentations produites ensuite sont analysées dans le budget restant. Un fichier JavaScript ordinaire constitue un module `original/bundle.js` même si aucun bundle n’a pu être déplié.
 
-Les extracteurs n’attendent pas nécessairement la fin de toutes les transformations : l’original peut être traité dès son admission. TruffleHog est proposé pour la détection principale des secrets, avec les matchers JavaScript de jsluice en complément. Ils examinent uniquement les fichiers de l’analyse en cours ; leurs résultats sont regroupés avec leur provenance. Le [modèle de résultats](/reference/results/#secrets-potentiels) précise ce partage.
+En phase 3, les transformations précèdent les extracteurs et les modules sont traités séquentiellement. L’original reste le premier module fourni à chaque extracteur. TruffleHog est proposé pour la détection principale des secrets, avec les matchers JavaScript de jsluice en complément. Ils examinent uniquement les fichiers de l’analyse en cours ; leurs résultats sont regroupés avec leur provenance. Le [modèle de résultats](/reference/results/#secrets-potentiels) précise ce partage.
 
 ## Acquisition
 

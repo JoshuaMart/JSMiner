@@ -1,6 +1,12 @@
 import { performance } from 'node:perf_hooks';
 import type { DatabaseSync } from 'node:sqlite';
-import { CleanupError, DockerWorker, type Worker } from '@jsminer/adapters';
+import {
+  CleanupError,
+  DockerWorker,
+  OFFLINE_VERSION,
+  type Worker,
+  type WorkerResult,
+} from '@jsminer/adapters';
 import {
   type AnalyzeRequest,
   type AnalyzeResponse,
@@ -12,15 +18,18 @@ import {
 import { ArtifactStore, type Pending, sha256 } from './artifacts.ts';
 import type { ServiceConfig } from './config.ts';
 import { ServiceError } from './errors.ts';
+import { type Category, finalize, merge } from './merge.ts';
 import { normalize } from './normalization.ts';
+import { decodeModules, normalizeOffline, parseOutput } from './offline.ts';
 
 export interface EngineOptions {
   worker?: Worker;
+  workers?: Partial<Record<ToolName, Worker>>;
   now?: () => number;
 }
 export class AnalysisEngine {
   readonly store: ArtifactStore;
-  private readonly worker: Worker;
+  private readonly workers: Partial<Record<ToolName, Worker>>;
   private readonly now: () => number;
   private recovered = false;
   private blocked = false;
@@ -36,7 +45,34 @@ export class AnalysisEngine {
   ) {
     this.now = options.now ?? Date.now;
     this.store = new ArtifactStore(db, config, this.now);
-    this.worker = options.worker ?? new DockerWorker(config.worker_image, this.store.owner);
+    this.workers =
+      options.workers ??
+      (options.worker
+        ? { jsluice: options.worker }
+        : Object.fromEntries(
+            (['webcrack', 'wakaru', 'jsluice', 'trufflehog', 'graphql', 'domains'] as const).map(
+              (name) => [
+                name,
+                name === 'jsluice'
+                  ? new DockerWorker(config.worker_image, this.store.owner)
+                  : new DockerWorker(
+                      config.offline_worker_image,
+                      this.store.owner,
+                      undefined,
+                      undefined,
+                      {
+                        version: OFFLINE_VERSION,
+                        protocol: '1',
+                        command: [name],
+                        maxBytes: ['webcrack', 'wakaru'].includes(name)
+                          ? 96 * 1024 * 1024
+                          : 2 * 1024 * 1024,
+                        tmpfsBytes: 128 * 1024 * 1024,
+                      },
+                    ),
+              ],
+            ),
+          ));
     this.purgeTimer = setInterval(
       () => {
         try {
@@ -50,7 +86,7 @@ export class AnalysisEngine {
     this.purgeTimer.unref();
   }
   get healthy() {
-    return !this.blocked && !this.closing && this.worker.healthy;
+    return !this.blocked && !this.closing && Object.values(this.workers).every((w) => w.healthy);
   }
   /** Reserve before HTTP body parsing; active also covers disconnect cleanup. */
   reserve() {
@@ -96,8 +132,9 @@ export class AnalysisEngine {
     const deadline = performance.now() + budget.analysis_ms;
     const names = selectedTools(request);
     try {
-      if (names.includes('jsluice') && this.worker instanceof DockerWorker && !this.recovered) {
-        await this.worker.recover(budget.cleanup_ms);
+      const docker = names.map((name) => this.workers[name]).find((w) => w instanceof DockerWorker);
+      if (docker instanceof DockerWorker && !this.recovered) {
+        await docker.recover(budget.cleanup_ms);
         this.recovered = true;
       }
       if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
@@ -136,30 +173,98 @@ export class AnalysisEngine {
         truncation: { truncated: false, reasons: [] },
         warnings: [],
       };
-      const tool = tools.find((tool) => tool.name === 'jsluice');
-      if (tool) {
-        const remaining = deadline - performance.now();
-        const result =
-          remaining <= 0
-            ? {
-                status: 'timeout' as const,
-                version: null,
-                durationMs: 0,
-                errorCode: 'analysis_timeout',
-                output: Buffer.alloc(0),
-              }
-            : await this.worker.run({
-                content: bytes,
-                timeoutMs: Math.max(
-                  1,
-                  Math.min(budget.tool_ms.jsluice, deadline - performance.now()),
-                ),
-                cleanupMs: budget.cleanup_ms,
-                memoryBytes: budget.worker_memory_bytes,
-                cpus: budget.worker_cpus,
-                pids: budget.worker_pids,
-                signal,
-              });
+      const current = pending;
+      const sensitive = new Set<string>();
+      let sensitiveBytes = 0,
+        redactIncomplete = false;
+      const addSensitive = (values: string[]) => {
+        for (const value of values)
+          if (!sensitive.has(value)) {
+            sensitiveBytes += Buffer.byteLength(value);
+            if (sensitiveBytes > 2 * 1024 * 1024 || sensitive.size >= 2000) {
+              redactIncomplete = true;
+              break;
+            }
+            sensitive.add(value);
+          }
+      };
+      const reasons = (values: AnalyzeResponse['truncation']['reasons']) => {
+        response.truncation.reasons = [...new Set([...response.truncation.reasons, ...values])];
+      };
+      const run = async (tool: ToolRun, content: Buffer, end: number): Promise<WorkerResult> => {
+        if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
+        const timeout = Math.min(end, deadline) - performance.now();
+        if (timeout <= 0)
+          return {
+            status: 'skipped',
+            version: null,
+            durationMs: 0,
+            errorCode: deadline <= performance.now() ? 'global_deadline' : 'tool_deadline',
+            output: Buffer.alloc(0),
+          };
+        const worker = this.workers[tool.name];
+        if (!worker)
+          return {
+            status: 'skipped',
+            version: null,
+            durationMs: 0,
+            errorCode: 'tool_unavailable',
+            output: Buffer.alloc(0),
+          };
+        const started = performance.now();
+        try {
+          return await worker.run({
+            content,
+            timeoutMs: Math.max(1, timeout),
+            cleanupMs: budget.cleanup_ms,
+            memoryBytes: budget.worker_memory_bytes,
+            cpus: budget.worker_cpus,
+            pids: budget.worker_pids,
+            signal,
+          });
+        } catch (error) {
+          if (error instanceof CleanupError || !worker.healthy) throw new CleanupError();
+          // The Docker adapter only throws an ordinary error after any attempted
+          // container has been cleaned up. Never expose the upstream error text.
+          return {
+            status: 'error',
+            version: null,
+            durationMs: Math.ceil(performance.now() - started),
+            errorCode: 'worker_failed',
+            output: Buffer.alloc(0),
+          };
+        }
+      };
+      const envelope = (content: Buffer) =>
+        Buffer.from(
+          JSON.stringify({
+            content: content.toString('utf8'),
+            reference_domains: request.reference_domains ?? [],
+            max_bytes: Math.max(
+              0,
+              current.capacity -
+                current.sources.reduce((n, s) => n + s.bytes.length, 0) -
+                budget.response_bytes,
+            ),
+            max_modules: Math.max(0, budget.module_count - current.sources.length),
+          }),
+        );
+      for (const name of ['webcrack', 'wakaru'] as const) {
+        const tool = tools.find((t) => t.name === name);
+        if (!tool) continue;
+        const aggregate = current.sources.find(
+          (s) => s.module.path === 'webcrack/bundle.js' && s.bytes.length > 0,
+        );
+        const source = name === 'wakaru' && aggregate ? aggregate : current.sources[0];
+        if (!source) throw new Error('Missing original.');
+        tool.input_path = source.module.path;
+        if (name === 'wakaru' && names.includes('webcrack') && !aggregate)
+          response.warnings.push({ tool: name, code: 'fallback_to_original' });
+        const result = await run(
+          tool,
+          envelope(source.bytes),
+          performance.now() + budget.tool_ms[name],
+        );
         Object.assign(tool, {
           status: result.status,
           version: result.version,
@@ -167,37 +272,141 @@ export class AnalysisEngine {
           error_code: result.errorCode,
         });
         if (result.status === 'success') {
+          let output: ReturnType<typeof parseOutput>, files: ReturnType<typeof decodeModules>;
           try {
-            const normalized = normalize(
-              result.output,
-              (value) => this.store.mac(project, value),
-              request.base_url,
-            );
-            response.endpoints = normalized.endpoints;
-            response.secrets = normalized.secrets;
-            response.truncation.reasons = normalized.reasons;
-            tool.modules_analyzed = 1;
-            if (normalized.partial) {
-              tool.status = 'partial';
-              tool.error_code = normalized.syntaxError ? 'syntax_incomplete' : 'output_truncated';
+            output = parseOutput(result.output, true);
+            files = decodeModules(output);
+          } catch {
+            tool.status = 'error';
+            tool.error_code = 'invalid_worker_output';
+            continue;
+          }
+          // Filesystem failures propagate: never pretend an incompletely imported representation succeeded.
+          const losses = this.store.add(current, name, source.module.path, files);
+          reasons([...output.reasons, ...losses]);
+          if (output.partial || losses.length) {
+            tool.status = 'partial';
+            tool.error_code = 'output_truncated';
+          } else if (!files.some((file) => file.path === 'bundle.js')) {
+            tool.status = 'error';
+            tool.error_code = 'missing_aggregate';
+          }
+        }
+      }
+      for (const name of ['jsluice', 'trufflehog', 'graphql', 'domains'] as const) {
+        const tool = tools.find((t) => t.name === name);
+        if (!tool) continue;
+        tool.modules_available = current.sources.length;
+        const end = performance.now() + budget.tool_ms[name];
+        for (const source of current.sources) {
+          const result = await run(
+            tool,
+            name === 'jsluice' ? source.bytes : envelope(source.bytes),
+            end,
+          );
+          tool.duration_ms += result.durationMs;
+          tool.version ??= result.version;
+          if (result.status !== 'success') {
+            tool.status = result.status;
+            tool.error_code = result.errorCode;
+            // Exhausted budgets and unavailable images cannot improve for a subsequent module.
+            if (['timeout', 'skipped'].includes(result.status)) break;
+            continue;
+          }
+          try {
+            if (name === 'jsluice') {
+              const normalized = normalize(
+                result.output,
+                (v) => this.store.mac(project, v),
+                request.base_url,
+              );
+              for (const value of [...normalized.endpoints, ...normalized.secrets])
+                for (const e of value.evidence) {
+                  e.module_path = source.module.path;
+                  e.representation = source.module.origin;
+                }
+              addSensitive(normalized.sensitive);
+              redactIncomplete ||= normalized.secretsTruncated;
+              merge(response, 'endpoints', normalized.endpoints);
+              merge(response, 'secrets', normalized.secrets);
+              reasons(normalized.reasons);
+              if (normalized.partial) {
+                tool.status = 'partial';
+                tool.error_code = normalized.syntaxError ? 'syntax_incomplete' : 'output_truncated';
+              } else if (tool.error_code === 'tool_unavailable') {
+                tool.status = 'success';
+                tool.error_code = null;
+              }
+            } else {
+              const output = parseOutput(result.output, false);
+              const normalized = normalizeOffline(output, name, source.module, (v) =>
+                this.store.mac(project, v),
+              );
+              if (
+                name === 'domains' &&
+                normalized.subdomains.some(
+                  (d) =>
+                    !request.reference_domains?.includes(d.reference_domain) ||
+                    !d.hostname.endsWith(`.${d.reference_domain}`),
+                )
+              )
+                throw new Error('Invalid domain.');
+              addSensitive(normalized.sensitive);
+              if (name === 'trufflehog' && output.partial) redactIncomplete = true;
+              merge(response, 'secrets', normalized.secrets);
+              merge(response, 'gql_operations', normalized.gql_operations);
+              merge(response, 'subdomains', normalized.subdomains);
+              reasons(output.reasons);
+              if (output.partial) {
+                tool.status = 'partial';
+                tool.error_code = output.error_code;
+                if (
+                  output.error_code === 'incomplete_document' &&
+                  !response.warnings.some(
+                    (w) => w.tool === name && w.code === 'incomplete_document',
+                  )
+                )
+                  response.warnings.push({ tool: name, code: 'incomplete_document' });
+              } else if (tool.error_code === 'tool_unavailable') {
+                tool.status = 'success';
+                tool.error_code = null;
+              }
             }
+            tool.modules_analyzed = (tool.modules_analyzed ?? 0) + 1;
           } catch {
             tool.status = 'error';
             tool.error_code = 'invalid_worker_output';
           }
         }
+        // A failed module never cancels findings from completed modules.
+        if (tool.status === 'success' && tool.modules_analyzed !== tool.modules_available) {
+          tool.status = 'partial';
+          tool.error_code = 'incomplete_modules';
+        }
       }
+      finalize(response, [...sensitive], redactIncomplete, (v) => this.store.mac(project, v));
       if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
+      if (performance.now() >= deadline) {
+        const last = (
+          ['domains', 'graphql', 'trufflehog', 'jsluice', 'wakaru', 'webcrack'] as const
+        )
+          .map((name) => tools.find((tool) => tool.name === name))
+          .find((tool) => tool !== undefined);
+        if (last?.status === 'success') {
+          last.status = 'partial';
+          last.error_code = 'global_deadline';
+        }
+      }
       this.statuses(response);
       while (Buffer.byteLength(JSON.stringify(response)) > budget.response_bytes) {
-        if (!response.endpoints.length && !response.secrets.length)
+        const categories: Category[] = ['endpoints', 'secrets', 'gql_operations', 'subdomains'];
+        categories.sort((a, b) => response[b].length - response[a].length);
+        const category = categories[0];
+        if (!category || !response[category].length)
           throw new ServiceError(503, 'response_budget_too_small');
         if (!response.truncation.reasons.includes('response_bytes'))
           response.truncation.reasons.push('response_bytes');
-        (response.endpoints.length >= response.secrets.length
-          ? response.endpoints
-          : response.secrets
-        ).pop();
+        response[category].pop();
         this.statuses(response);
       }
       response.expires_at = new Date(this.now() + budget.retention_ms).toISOString();
@@ -242,7 +451,8 @@ export class AnalysisEngine {
       response.coverage[category] =
         requested.length === 0
           ? 'not_requested'
-          : !requested.some((t) => ['success', 'partial'].includes(t.status))
+          : !response[category].length &&
+              !requested.some((t) => ['success', 'partial'].includes(t.status))
             ? 'failed'
             : transformedIncomplete ||
                 response.truncation.truncated ||
@@ -250,11 +460,17 @@ export class AnalysisEngine {
               ? 'partial'
               : 'complete';
     }
-    response.status = !response.tools.some((t) => ['success', 'partial'].includes(t.status))
-      ? 'failed'
-      : response.truncation.truncated || response.tools.some((t) => t.status !== 'success')
-        ? 'partial'
-        : 'complete';
+    response.status =
+      ![
+        ...response.endpoints,
+        ...response.secrets,
+        ...response.gql_operations,
+        ...response.subdomains,
+      ].length && !response.tools.some((t) => ['success', 'partial'].includes(t.status))
+        ? 'failed'
+        : response.truncation.truncated || response.tools.some((t) => t.status !== 'success')
+          ? 'partial'
+          : 'complete';
   }
   abort() {
     this.closing = true;

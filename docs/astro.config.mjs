@@ -34,6 +34,7 @@ export default defineConfig({
 						{ label: 'Modèle de résultats', slug: 'reference/results' },
 						{ label: 'Validation phase 1', slug: 'reference/phase-1-validation' },
 						{ label: 'Validation phase 2', slug: 'reference/phase-2-validation' },
+						{ label: 'Validation phase 3', slug: 'reference/phase-3-validation' },
 					],
 				},
 				{

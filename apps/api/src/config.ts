@@ -9,6 +9,7 @@ export interface ServiceConfig {
   database: string;
   artifact_directory?: string;
   worker_image: string;
+  offline_worker_image: string;
   tokens: { sha256: string; project_id: string; permissions: Permission[] }[];
   budgets: {
     http_body_bytes: number;

@@ -47,7 +47,7 @@ test('real jsluice extracts annotated local source, masks secrets and never eval
     {
       content:
         'const firebase={apiKey:"AIzaSYNTHETICfixture",authDomain:"fixture.test",projectId:"fixture",storageBucket:"fixture",extra:{nested:1}};',
-      secrets: 2,
+      secrets: 1,
       status: 'complete',
     },
   ];

@@ -2,8 +2,16 @@ import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 
-export const JSLUICE_PROTOCOL = '2';
+export const JSLUICE_PROTOCOL = '3';
 export const JSLUICE_VERSION = '0ddfab153e060a9eeaded4d8669233f7c071e7e4';
+export const OFFLINE_VERSION = 'webcrack2.16.0-wakaru1.12.0-trufflehog3.97.9-static2';
+export interface WorkerProfile {
+  version: string;
+  protocol: string;
+  command: string[];
+  maxBytes: number;
+  tmpfsBytes?: number;
+}
 export interface CommandOptions {
   timeoutMs: number;
   maxBytes: number;
@@ -88,6 +96,12 @@ export class DockerWorker implements Worker {
     private readonly owner: string,
     private readonly command: Command = dockerCommand,
     private readonly now = () => performance.now(),
+    private readonly profile: WorkerProfile = {
+      version: JSLUICE_VERSION,
+      protocol: JSLUICE_PROTOCOL,
+      command: [],
+      maxBytes: 2 * 1024 * 1024 + 65536,
+    },
   ) {}
 
   async recover(cleanupMs: number) {
@@ -132,7 +146,7 @@ export class DockerWorker implements Worker {
       if (args[0] === 'create') creationAttempted = true;
       return this.command(args, {
         timeoutMs: remaining,
-        maxBytes: 2 * 1024 * 1024 + 65536,
+        maxBytes: args[0] === 'start' ? this.profile.maxBytes : 65536,
         ...(stdin ? { input: stdin } : {}),
         signal: input.signal,
       });
@@ -146,7 +160,7 @@ export class DockerWorker implements Worker {
       errorCode,
       output,
       durationMs: Math.ceil(this.now() - started),
-      version: status === 'skipped' ? null : JSLUICE_VERSION,
+      version: status === 'skipped' ? null : this.profile.version,
     });
     const image = await invoke([
       'image',
@@ -161,8 +175,8 @@ export class DockerWorker implements Worker {
       image.code !== 0 ||
       !id ||
       !/^sha256:[0-9a-f]{64}$/.test(id) ||
-      version !== JSLUICE_VERSION ||
-      protocol !== JSLUICE_PROTOCOL
+      version !== this.profile.version ||
+      protocol !== this.profile.protocol
     )
       return result('skipped', 'tool_unavailable');
     const name = `jsminer-${randomUUID()}`;
@@ -191,7 +205,11 @@ export class DockerWorker implements Worker {
         'core=0:0',
         '--log-driver=none',
         '--interactive',
+        ...(this.profile.tmpfsBytes
+          ? ['--tmpfs', `/tmp:rw,noexec,nosuid,nodev,size=${this.profile.tmpfsBytes},mode=1777`]
+          : []),
         id,
+        ...this.profile.command,
       ]);
       uncertainCreation = created.fault !== null;
       if (created.code !== 0 || created.fault)

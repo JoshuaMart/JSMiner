@@ -24,9 +24,9 @@ JSMINER_CONFIG="$PWD/.local/config.json" pnpm dev
 curl --fail -H "Authorization: Bearer $(cat .local/token)" http://127.0.0.1:3000/health
 ```
 
-`/health` répond `200` avec `phase: 2` lorsque le stockage est utilisable et que le superviseur n’est pas bloqué. Il ne démarre pas de worker et ne garantit pas la disponibilité de Docker ou de l’image. `POST /analyze` traite `content` ; les routes `/source` consultent les artefacts publiés. Le mode `url` répond `501 url_not_implemented`. L’arrêt par `Ctrl+C` annule l’analyse active, attend le nettoyage, puis ferme HTTP et SQLite.
+`/health` répond `200` avec `phase: 3` lorsque le stockage est utilisable et que le superviseur n’est pas bloqué. Il ne démarre pas de worker et ne garantit pas la disponibilité de Docker ou de l’image. `POST /analyze` traite `content` ; les routes `/source` consultent les artefacts publiés. Le mode `url` répond `501 url_not_implemented`. L’arrêt par `Ctrl+C` annule l’analyse active, attend le nettoyage, puis ferme HTTP et SQLite.
 
-L’image `jsminer-jsluice:phase2` se construit avec `pnpm worker:build`. Le service résout son identifiant immuable et vérifie les étiquettes de version jsluice et de protocole (version 2) avant chaque exécution. Reconstruire l’image après une mise à jour du worker. Le worker reçoit uniquement le script sur stdin : aucun volume, socket Docker, secret de service ou réseau. Les limites mémoire, CPU, processus et sorties s’appliquent au conteneur. Le moteur Docker est piloté par le service hôte ; son accès est réservé à l’opérateur.
+Les images `jsminer-jsluice:phase2` et `jsminer-offline:phase3` se construisent avec `pnpm worker:build`. Le service résout son identifiant immuable et vérifie les étiquettes de version jsluice et de protocole (version 3) avant chaque exécution. Reconstruire l’image après une mise à jour du worker. Le worker reçoit uniquement le script sur stdin : aucun volume, socket Docker, secret de service ou réseau. Les limites mémoire, CPU, processus et sorties s’appliquent au conteneur. Le moteur Docker est piloté par le service hôte ; son accès est réservé à l’opérateur.
 
 Après `pnpm build`, le démarrage compilé est :
 
@@ -56,15 +56,15 @@ L’identité du projet, les permissions et l’isolation des handles sont test�
 
 Les clés facultatives de `budgets` reprennent les [budgets du pipeline](/architecture/pipeline/#budgets-proposés). Chaque valeur est un entier positif et peut uniquement réduire son plafond. Les valeurs manquantes reçoivent leurs valeurs par défaut. Une clé inconnue, des empreintes de jetons dupliquées ou des budgets incohérents font échouer le démarrage.
 
-Le service réserve la capacité avant lecture du corps HTTP et admet une seule analyse active et un seul worker à la fois ; une seconde analyse reçoit `429` avec `Retry-After: 1`. Les plafonds HTTP, script, artefacts et réponse sont appliqués, ainsi que le budget jsluice limité au temps global restant. Le nettoyage dispose de son budget distinct. Le budget de capture concerne la phase 4.
+Le service réserve la capacité avant lecture du corps HTTP et admet une seule analyse active et un seul worker à la fois ; une seconde analyse reçoit `429` avec `Retry-After: 1`. Les plafonds HTTP, script, artefacts et réponse sont appliqués, ainsi que les budgets cumulés par extracteur, limités au temps global restant. Le nettoyage dispose de son budget distinct. Le budget de capture concerne la phase 4.
 
 `artifact_directory` désigne un répertoire privé (`0700`), par défaut `<database>.artifacts`. Il contient des fichiers `0600`, une clé HMAC persistante et un verrou SQLite exclusif (`.lease.sqlite`). Le système libère le verrou à la fin du processus, même après un crash ; ne jamais supprimer ce fichier pendant une exécution. Le mode `:memory:` utilise un stockage temporaire supprimé à la fermeture, sauf répertoire explicite. Ne pas supprimer `.key` : elle stabilise les empreintes par projet et signe les curseurs. Sauvegarder ensemble SQLite et le répertoire d’artefacts.
 
-Une réservation conservatrice couvre le source, le plafond de réponse et 8 Kio de métadonnées par handle. Les fichiers deviennent visibles après renommage puis indexation SQLite. Le quota de phase 2 comptabilise ces artefacts ; la taille physique des fichiers SQLite/WAL, des images et des journaux Docker relève du stockage de l’hôte. Le cache et sa politique complète d’éviction restent en phase 4.
+Une réservation initiale couvre le source, le plafond de réponse et 8 Kio par handle, plus 1 Kio réservé au manifeste initial. Les transformations sont limitées à la capacité restante, avec une marge pour leur manifeste ; le quota est revérifié avant publication. Les fichiers deviennent visibles après renommage puis indexation SQLite. Le quota comptabilise ces artefacts et le manifeste ; la taille physique des fichiers SQLite/WAL, des images et des journaux Docker relève du stockage de l’hôte. Le cache et sa politique complète d’éviction restent en phase 4.
 
 La rétention commence à la publication (24 h par défaut). La purge s’exécute au démarrage, à l’admission, lors d’un accès expiré et au plus toutes les 60 secondes. Un tombstone fournit `410` au propriétaire pendant 24 h après expiration, puis `404`. Les handles encore valides restent intacts.
 
-`worker_image` permet de désigner l’image locale construite par l’opérateur. Aucune image n’est téléchargée durant une analyse. Au premier traitement jsluice, le superviseur récupère les conteneurs orphelins portant l’étiquette du stockage. Un nettoyage incertain bloque les nouvelles analyses et rend `/health` indisponible. Après résolution du problème Docker, redémarrer le service avec le même stockage pour reprendre la récupération. Les erreurs brutes du worker et du démon sont supprimées.
+`worker_image` désigne l’image jsluice et `offline_worker_image` l’image des cinq autres outils. Ces paramètres concernent des images locales construites par l’opérateur. Aucune image n’est téléchargée durant une analyse. Au premier traitement Docker, le superviseur récupère les conteneurs orphelins portant l’étiquette du stockage. Un nettoyage incertain bloque les nouvelles analyses et rend `/health` indisponible. Après résolution du problème Docker, redémarrer le service avec le même stockage pour reprendre la récupération. Les erreurs brutes du worker et du démon sont supprimées.
 
 ## Contrats et vérifications
 
@@ -81,7 +81,7 @@ JSON Schema contrôle les structures, types, enums et bornes. `validateContract`
 | `pnpm build` | Compilation des trois packages |
 | `pnpm typecheck` | Types des trois packages |
 | `pnpm test` | Tests sur le code compilé ; exécuter `pnpm build` avant |
-| `pnpm worker:build` | Construction du worker jsluice |
+| `pnpm worker:build` | Construction des deux images de workers |
 | `pnpm test:workers` | Intégration Docker réelle, extraction et cycle de vie ; requiert le build Node et l’image |
 | `docker build --platform linux/amd64 --target validate -t jsminer:validation .` | Installation verrouillée et vérifications sur Linux amd64 |
 
@@ -91,8 +91,16 @@ Biome **2.5.14** est épinglé avec le preset `recommended`. Sa [configuration](
 
 Le socle est vérifié sur macOS arm64 et sur Linux amd64 dans Docker, ce dernier étant émulé sur la machine de développement. Linux amd64, instance unique et stockage local privé, est la cible initiale. Windows, Linux arm64 et la performance native Linux ne sont pas qualifiés.
 
-Le Dockerfile sert à qualifier le socle ; son étage `runtime` utilise un utilisateur non privilégié, mais conserve les dépendances de développement. Ce n’est pas encore une image d’exploitation du moteur. Le service de phase 2 se lance sur l’hôte avec Docker disponible. Le Dockerfile racine ne fournit pas de client Docker et ne suffit donc pas à déployer le moteur complet. Le worker jsluice possède son Dockerfile séparé. Tout accès distant passe par un proxy TLS privé ; ne transmettre les jetons en HTTP clair que sur la boucle locale.
+Le Dockerfile sert à qualifier le socle ; son étage `runtime` utilise un utilisateur non privilégié, mais conserve les dépendances de développement. Ce n’est pas encore une image d’exploitation du moteur. Le service de phase 3 se lance sur l’hôte avec Docker disponible. Le Dockerfile racine ne fournit pas de client Docker et ne suffit donc pas à déployer le moteur complet. Les deux images de workers possèdent leurs Dockerfiles séparés. Tout accès distant passe par un proxy TLS privé ; ne transmettre les jetons en HTTP clair que sur la boucle locale.
 
-Le [rapport de phase 2](/reference/phase-2-validation/) consigne les tests du parcours hors ligne. Le [rapport de phase 1](/reference/phase-1-validation/) décrit les vérifications réalisées et les conditions de compatibilité avec le hash Fingerprinter.
+Le [rapport de phase 3](/reference/phase-3-validation/) consigne les versions, les tests du profil complet et ses limites. Le [rapport de phase 2](/reference/phase-2-validation/) documente le socle du parcours hors ligne. Le [rapport de phase 1](/reference/phase-1-validation/) décrit les vérifications réalisées et les conditions de compatibilité avec le hash Fingerprinter.
 
 La vérification amont est séparée de la CI Node.js et ne nécessite pas de navigateur : avec Python 3.12+, Go compatible avec le `go.mod` amont et les dépendances Go déjà en cache, exécuter `python3 scripts/verify-fingerprinter-hash.py /chemin/vers/Fingerprinter`. Le dépôt amont doit être propre ; le script exige le commit consigné dans les fixtures, le teste dans un répertoire temporaire et affiche le commit vérifié et ne modifie pas le dépôt original. Une nouvelle version doit être comparée au commit consigné dans les fixtures avant de mettre à jour la preuve.
+
+## Workers de phase 3
+
+L’image `jsminer-offline:phase3` contient webcrack 2.16.0, Wakaru 1.12.0, TruffleHog 3.97.9, `@babel/parser` 7.29.9 et `graphql` 17.0.2. Le lockfile npm du worker est indépendant du workspace pnpm : `npm ci` s’exécute lors de la construction de l’image. Les archives TruffleHog Linux arm64/amd64 ont un SHA-256 fixé dans le Dockerfile. Le superviseur vérifie la version composite `webcrack2.16.0-wakaru1.12.0-trufflehog3.97.9-static2` et le protocole 1 avant chaque démarrage.
+
+Les conteneurs disposent uniquement d’un `/tmp` en mémoire de 128 Mio, sans exécution de fichiers depuis ce volume. Aucun fichier hôte n’est monté. Le contenu entre sur stdin ; les sources transformées reviennent en base64 dans une enveloppe JSON bornée, jamais dans `POST /analyze`. Le service vérifie encodage, chemins, doublons et budgets avant import. Les noms de modules sont internes (`modules/m0.js`, etc.), sans conserver les chemins arbitraires générés par les outils.
+
+Le moteur exécute séquentiellement les transformations puis les extracteurs. Un conteneur traite un module par invocation ; le coût de démarrage et de nettoyage consomme le délai disponible pour le module suivant. Cette première implémentation privilégie les budgets explicites ; elle n’exploite pas encore le plafond de deux workers simultanés. Un gros bundle peut donc donner une couverture partielle même sans erreur de syntaxe.

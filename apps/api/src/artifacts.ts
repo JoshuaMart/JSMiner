@@ -39,6 +39,8 @@ export interface Pending {
   bytes: Buffer;
   module: Module;
   project: string;
+  sources: { module: Module; bytes: Buffer }[];
+  capacity: number;
 }
 
 export class ArtifactStore {
@@ -155,7 +157,8 @@ export class ArtifactStore {
     const used = Number(
       this.db.prepare('SELECT coalesce(sum(bytes),0) AS used FROM analyses').get()?.used ?? 0,
     );
-    const reserved = bytes.length + this.config.budgets.response_bytes + 8192;
+    // Include the original manifest as well as the index/storage overhead.
+    const reserved = bytes.length + this.config.budgets.response_bytes + 8192 + 1024;
     if (used + reserved > this.config.budgets.storage_bytes)
       throw new ServiceError(429, 'storage_full');
     const handle = `ana_${randomUUID()}`;
@@ -177,7 +180,66 @@ export class ArtifactStore {
       lines,
       hash: sha256(bytes),
     };
-    return { handle, directory, bytes, module, project };
+    return {
+      handle,
+      directory,
+      bytes,
+      module,
+      project,
+      sources: [{ module, bytes }],
+      capacity: Math.min(
+        this.config.budgets.artifact_bytes,
+        this.config.budgets.storage_bytes - used - 8192,
+      ),
+    };
+  }
+  add(
+    pending: Pending,
+    origin: 'webcrack' | 'wakaru',
+    parent: string,
+    files: { path: string; content: Buffer }[],
+  ) {
+    const reasons = new Set<'module_count' | 'artifact_bytes'>();
+    const paths = new Set(pending.sources.map((s) => s.module.path));
+    if (!paths.has(parent)) throw new Error('Invalid parent.');
+    // Validate the whole envelope before writing any file; worker paths never reach the filesystem unchecked.
+    for (const file of files) {
+      const path = `${origin}/${file.path}`;
+      if (!/^(?:bundle\.js|modules\/m[0-9]+\.js)$/.test(file.path) || paths.has(path))
+        throw new Error('Invalid module path.');
+      paths.add(path);
+    }
+    let used = pending.sources.reduce((n, s) => n + s.bytes.length, 0);
+    let metadata = Buffer.byteLength(JSON.stringify(pending.sources.map((s) => s.module)));
+    for (const file of files) {
+      if (pending.sources.length >= this.config.budgets.module_count) {
+        reasons.add('module_count');
+        continue;
+      }
+      if (
+        used + file.content.length + this.config.budgets.response_bytes + metadata + 1024 >
+        pending.capacity
+      ) {
+        reasons.add('artifact_bytes');
+        continue;
+      }
+      const path = `${origin}/${file.path}`;
+      const module: Module = {
+        path,
+        origin,
+        parent_path: parent,
+        bytes: file.content.length,
+        lines: 1,
+        hash: sha256(file.content),
+      };
+      for (const byte of file.content) if (byte === 10) module.lines++;
+      mkdirSync(join(pending.directory, origin, 'modules'), { recursive: true, mode: 0o700 });
+      writeFileSync(join(pending.directory, path), file.content, { flag: 'wx', mode: 0o600 });
+      pending.sources.push({ module, bytes: file.content });
+      used += file.content.length;
+      metadata += Buffer.byteLength(JSON.stringify(module)) + 1;
+    }
+    return [...reasons];
   }
   private removeDirectory(directory: string) {
     try {
@@ -190,12 +252,22 @@ export class ArtifactStore {
     rmSync(pending.directory, { recursive: true, force: true });
   }
   publish(pending: Pending, response: AnalyzeResponse) {
-    const manifest = [pending.module];
+    const manifest = pending.sources.map((s) => s.module);
+    const sourceBytes = pending.sources.reduce((n, s) => n + s.bytes.length, 0);
     const serialized = JSON.stringify(response);
-    if (pending.bytes.length + Buffer.byteLength(serialized) > this.config.budgets.artifact_bytes)
+    if (sourceBytes + Buffer.byteLength(serialized) > pending.capacity)
       throw new ServiceError(413, 'artifact_too_large');
     writeFileSync(join(pending.directory, 'result.json'), serialized, { flag: 'wx', mode: 0o600 });
-    const total = pending.bytes.length + Buffer.byteLength(serialized) + 8192;
+    const total =
+      sourceBytes +
+      Buffer.byteLength(serialized) +
+      Buffer.byteLength(JSON.stringify(manifest)) +
+      8192;
+    const used = Number(
+      this.db.prepare('SELECT coalesce(sum(bytes),0) AS used FROM analyses').get()?.used ?? 0,
+    );
+    if (used + total > this.config.budgets.storage_bytes)
+      throw new ServiceError(429, 'storage_full');
     const destination = join(this.root, 'objects', pending.handle);
     // The index is the publication boundary. Renamed but unindexed objects are private orphans.
     renameSync(pending.directory, destination);

@@ -32,7 +32,7 @@ func main() {
 		}
 	}()
 	source, err := io.ReadAll(io.LimitReader(os.Stdin, (10<<20)+1))
-	if err != nil || len(source) == 0 || len(source) > 10<<20 {
+	if err != nil || len(source) > 10<<20 {
 		os.Exit(2)
 	}
 	syntaxError := hasSyntaxError(source)

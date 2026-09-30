@@ -1,6 +1,7 @@
 import { JSLUICE_VERSION } from '@jsminer/adapters';
 import type { AnalyzeResponse, Endpoint, Secret } from '@jsminer/contracts';
 import { Ajv2020 } from 'ajv/dist/2020.js';
+import { secret } from './offline.ts';
 
 interface EndpointRecord {
   type: 'endpoint';
@@ -87,27 +88,25 @@ export function normalize(output: Buffer, mac: (value: string) => string, base?:
     if (record.type !== 'secret') continue;
     const values = Object.values(record.data).filter(Boolean).sort();
     sensitive.push(...values);
-    const fingerprint = `hmac-sha256:${mac(JSON.stringify(values))}`;
     const rule = `jsluice:${record.kind}`;
-    const id = `sec_${mac(JSON.stringify([rule, fingerprint]))}`;
-    secrets.set(id, {
-      id,
-      confidence: 'medium',
-      kind: record.kind,
-      rule_id: rule,
-      masked_value: '[REDACTED]',
-      fingerprint,
-      validation: 'not_performed',
-      evidence: [
-        {
-          tool: 'jsluice',
-          module_path: 'original/bundle.js',
-          representation: 'original',
-          location: null,
-          rule_id: rule,
-        },
-      ],
-    });
+    const found = secret(
+      record.kind,
+      values,
+      rule,
+      {
+        tool: 'jsluice',
+        module_path: 'original/bundle.js',
+        representation: 'original',
+        location: null,
+      },
+      mac,
+    );
+    const previous = secrets.get(found.id);
+    if (previous) {
+      if (!previous.evidence.some((e) => e.rule_id === rule))
+        previous.evidence.push(...found.evidence);
+      previous.rule_id = [previous.rule_id, rule].sort()[0] ?? rule;
+    } else secrets.set(found.id, found);
   }
   sensitive.sort((a, b) => b.length - a.length);
   const mask = (value: string) => {
@@ -138,15 +137,15 @@ export function normalize(output: Buffer, mac: (value: string) => string, base?:
   if (!done.secrets_truncated)
     for (const record of records) {
       if (record.type !== 'endpoint') continue;
-      const raw = mask(record.url);
-      const withoutFragment = raw.split('#')[0] ?? '';
+      // Parse structural delimiters before redaction can change their meaning.
+      const withoutFragment = record.url.split('#')[0] ?? '';
       const separator = withoutFragment.indexOf('?');
       const path = separator < 0 ? withoutFragment : withoutFragment.slice(0, separator);
       const query = separator < 0 ? undefined : withoutFragment.slice(separator + 1);
       if (!path) continue;
       const queryKeys = params(query === undefined ? [] : [...new URLSearchParams(query).keys()]);
       let value =
-        path +
+        mask(path.replace(/^((?:https?:)?[/\\]{2}|https?:)[^/\\]*@/i, '$1')) +
         (queryKeys.length
           ? `?${queryKeys.map((key) => `${encodeURIComponent(key)}=REDACTED`).join('&')}`
           : '');
@@ -179,7 +178,7 @@ export function normalize(output: Buffer, mac: (value: string) => string, base?:
       const method = /^[A-Z]{1,32}$/.test(record.method) ? record.method : null;
       const queryParams = params([...(record.query_params ?? []), ...queryKeys]);
       const bodyParams = params(record.body_params);
-      const id = `end_${mac(JSON.stringify([value, resolved, method, kind, queryParams, bodyParams]))}`;
+      const id = `end_${mac(JSON.stringify([value, resolved, method, kind, dynamic, queryParams, bodyParams]))}`;
       endpoints.set(id, {
         id,
         value,
@@ -219,6 +218,8 @@ export function normalize(output: Buffer, mac: (value: string) => string, base?:
       )
       .sort((a, b) => a.id.localeCompare(b.id)),
     secrets: [...secrets.values()].sort((a, b) => a.id.localeCompare(b.id)),
+    sensitive,
+    secretsTruncated: done.secrets_truncated,
     reasons: [...reasons],
     partial: done.truncated || done.syntax_error || reasons.size > 0,
     syntaxError: done.syntax_error,

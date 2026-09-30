@@ -5,6 +5,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json redocly.
 COPY packages ./packages
 COPY apps ./apps
 COPY scripts ./scripts
+COPY workers/node ./workers/node
 COPY docs/src/content/docs/reference/api.md ./docs/src/content/docs/reference/api.md
 RUN pnpm install --frozen-lockfile && pnpm check
 

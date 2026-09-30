@@ -153,7 +153,7 @@ test('a thrown create command is treated as uncertain creation', async () => {
 });
 
 test('old worker protocol is refused before container creation', async () => {
-  const { worker, calls } = fixture({ image: () => success(`${image} ${JSLUICE_VERSION} 1`) });
+  const { worker, calls } = fixture({ image: () => success(`${image} ${JSLUICE_VERSION} 2`) });
   assert.equal((await worker.run(input())).errorCode, 'tool_unavailable');
   assert.deepEqual(
     calls.map((c) => c.args[0]),

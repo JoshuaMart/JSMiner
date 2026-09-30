@@ -5,9 +5,9 @@ description: Contrats v0.1, validation disponible et comportement métier prévu
 
 ## Conventions
 
-**Parcours hors ligne implémenté en phase 2.** `content` avec `tools: ["jsluice"]` et les lectures `/source` fonctionnent. Le mode URL reste à livrer (`501 url_not_implemented`) ; les autres outils demandés sont signalés `skipped / tool_unavailable`. JSON UTF-8, noms de champs en `snake_case`, dates UTC au format RFC 3339. Toutes les routes nécessitent un jeton Bearer opaque associé à un projet par la configuration serveur. Les droits sont `analysis:write`, `analysis:read` et `source:read`. `POST /analyze` exige les deux premiers droits, les routes `/source` le troisième. Voir le [guide de configuration](/guides/development/).
+**Profil hors ligne implémenté en phase 3.** `content` accepte tous les outils documentés ; les lectures `/source` exposent les représentations conservées. Le mode URL reste à livrer (`501 url_not_implemented`). Un outil dont l’image est absente ou incompatible est signalé `skipped / tool_unavailable`. JSON UTF-8, noms de champs en `snake_case`, dates UTC au format RFC 3339. Toutes les routes nécessitent un jeton Bearer opaque associé à un projet par la configuration serveur. Les droits sont `analysis:write`, `analysis:read` et `source:read`. `POST /analyze` exige les deux premiers droits, les routes `/source` le troisième. Voir le [guide de configuration](/guides/development/).
 
-Le contrat machine est `packages/contracts/schema.json`, complété par les invariants de `validateContract` ; `packages/contracts/openapi.json` est généré. Les exemples de réponses métier ci-dessous sont vérifiés comme fixtures et ne décrivent pas des traitements déjà disponibles. `GET /health`, authentifié avec `analysis:read`, vérifie réellement SQLite et répond `200` avec les champs `status: "ok"`, `phase: 1`, `storage: "ready"`.
+Le contrat machine est `packages/contracts/schema.json`, complété par les invariants de `validateContract` ; `packages/contracts/openapi.json` est généré. Les exemples de réponses métier ci-dessous sont vérifiés comme fixtures du contrat. `GET /health`, authentifié avec `analysis:read`, vérifie réellement SQLite et répond `200` avec les champs `status: "ok"`, `phase: 3`, `storage: "ready"`.
 
 Les champs inconnus sont refusés en entrée. Les clients tolèrent les nouveaux champs de réponse. Une rupture nécessite une nouvelle version de contrat ; la réponse annonce `schema_version: "0.1"`.
 
@@ -41,7 +41,7 @@ Depuis le commit `32142b2`, le hash Fingerprinter brut identifie le corps CDP co
 | `graphql` | Extracteur interne d’opérations GraphQL statiques |
 | `domains` | Extracteur interne de sous-domaines observés |
 
-Lorsque `tools` est absent, le profil proposé sélectionne `webcrack`, `wakaru`, `jsluice`, `trufflehog` et `graphql`, puis ajoute `domains` si `reference_domains` contient au moins un domaine. `tools` décrit un ensemble, pas un ordre : si les deux transformateurs sont sélectionnés, le serveur applique webcrack puis Wakaru, avec repli sur l’original si la première transformation échoue. Une sélection explicite remplace le profil par défaut. Une liste de transformateurs seuls est valide : les tableaux de résultats sont vides et leur couverture vaut `not_requested`.
+Lorsque `tools` est absent, le profil par défaut sélectionne `webcrack`, `wakaru`, `jsluice`, `trufflehog` et `graphql`, puis ajoute `domains` si `reference_domains` contient au moins un domaine. `tools` décrit un ensemble, pas un ordre : si les deux transformateurs sont sélectionnés, le serveur applique webcrack puis Wakaru, avec repli sur l’original si la première transformation échoue. Une sélection explicite remplace le profil par défaut. Une liste de transformateurs seuls est valide : les tableaux de résultats sont vides et leur couverture vaut `not_requested`.
 
 L’extracteur `domains` exige au moins un `reference_domains` lorsqu’il est explicitement sélectionné ; sinon, la requête est refusée avec `422`. Une requête minimale avec seulement `content` reste valide et indique `coverage.subdomains: not_requested`.
 

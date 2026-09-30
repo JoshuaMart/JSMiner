@@ -76,7 +76,7 @@ const document = {
     title: 'JSMiner API',
     version: '0.1.0',
     description:
-      'Offline content analysis with isolated jsluice and private source artifacts is implemented. URL acquisition, transformations and other extractors remain unavailable.',
+      'Offline content analysis with isolated webcrack, Wakaru, jsluice, TruffleHog, GraphQL and domain extractors and private source artifacts is implemented. URL acquisition and cache reuse remain unavailable.',
   },
   servers: [
     {
