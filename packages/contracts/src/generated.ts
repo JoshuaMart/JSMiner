@@ -21,9 +21,13 @@ export type AnalyzeRequest1 = {
 export type HttpUrl = string;
 export type ToolName = "webcrack" | "wakaru" | "jsluice" | "trufflehog" | "graphql" | "domains";
 export type Hash = string;
+/**
+ * Minimum confidence retained in all four finding categories.
+ */
+export type Confidence = "low" | "medium" | "high";
 export type Domain = string;
 export type Identifier = string;
-export type Confidence = "low" | "medium" | "high";
+export type Confidence1 = "low" | "medium" | "high";
 export type ModulePath = string;
 export type Representation = "original" | "webcrack" | "wakaru";
 export type CoverageStatus = "complete" | "partial" | "failed" | "not_requested";
@@ -40,6 +44,21 @@ export interface AnalyzeRequest2 {
   tools?: [ToolName, ...ToolName[]];
   script_hash?: Hash;
   base_url?: HttpUrl;
+  /**
+   * Mask all endpoint query values. Detected secrets remain masked regardless of this option.
+   */
+  redact_query_values?: boolean;
+  min_confidence?: Confidence;
+  /**
+   * Filter endpoints against base_url, or url when base_url is absent. same_domain uses the registrable domain including private public suffixes.
+   */
+  endpoint_scope?: "all" | "same_fqdn" | "same_domain";
+  /**
+   * Exclude endpoint path suffixes, case-insensitively, with an optional leading dot (e.g. css, .png, js.map). Query strings are ignored.
+   *
+   * @maxItems 100
+   */
+  exclude_extensions?: string[];
   /**
    * @minItems 0
    * @maxItems 20
@@ -107,7 +126,7 @@ export interface AnalyzeResponse {
 }
 export interface Endpoint {
   id: Identifier;
-  confidence: Confidence;
+  confidence: Confidence1;
   /**
    * @minItems 1
    * @maxItems 5
@@ -141,7 +160,7 @@ export interface Location {
 }
 export interface Secret {
   id: Identifier;
-  confidence: Confidence;
+  confidence: Confidence1;
   /**
    * @minItems 1
    * @maxItems 5
@@ -162,7 +181,7 @@ export interface SecretEvidence {
 }
 export interface GraphqlOperation {
   id: Identifier;
-  confidence: Confidence;
+  confidence: Confidence1;
   /**
    * @minItems 1
    * @maxItems 5
@@ -188,7 +207,7 @@ export interface GraphqlOperation {
 }
 export interface Subdomain {
   id: Identifier;
-  confidence: Confidence;
+  confidence: Confidence1;
   /**
    * @minItems 1
    * @maxItems 5

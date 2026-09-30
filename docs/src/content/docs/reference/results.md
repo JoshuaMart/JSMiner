@@ -22,9 +22,9 @@ Les observations identiques sont regroupées en conservant leurs preuves. Les [s
 | `dynamic` | Présence d’une expression inconnue |
 | `query_params` / `body_params` | Noms des paramètres, sans valeurs |
 
-Les valeurs query sont masquées et les identifiants de l’autorité URL supprimés. La casse des chemins et les caractères réservés sont préservés. Une méthode inconnue ne devient pas automatiquement `GET` ; le défaut de `fetch` peut être reconnu.
+Les valeurs query sont conservées par défaut, après normalisation de leur encodage. Avec `redact_query_values: true`, `?q=paris` devient `?q=REDACTED`. Les secrets détectés sont toujours masqués, indépendamment de cette option et du filtre de confiance. Les noms des paramètres restent disponibles ; les identifiants de l’autorité URL sont supprimés. La casse des chemins et les caractères réservés sont préservés. Une méthode inconnue ne devient pas automatiquement `GET` ; le défaut de `fetch` peut être reconnu.
 
-Le regroupement tient compte du type, de la méthode, du chemin, des paramètres et des parties dynamiques. Une chaîne isolée reste une preuve moins forte qu’un appel réseau reconnu.
+Le regroupement tient compte du type, de la méthode, du chemin, des paramètres et des parties dynamiques. Une chaîne isolée est `low`, un appel réseau reconnu `medium`. Les secrets potentiels sont `medium` ; les opérations GraphQL et sous-domaines validés sont `high`. Avec les détecteurs actuels, `min_confidence: "high"` exclut donc les endpoints et secrets.
 
 ## Secrets potentiels
 

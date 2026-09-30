@@ -184,6 +184,7 @@ test('normalization masks secret values, URL credentials/query/fragment and pres
   const app = await api(t, { worker: worker(records) });
   const response = await analyze(app, 'const syntheticFixture = true;', {
     base_url: 'https://app.example.test/base/',
+    redact_query_values: true,
   });
   assert.equal(response.statusCode, 200, response.body);
   const result = response.json();
@@ -479,7 +480,7 @@ test('endpoint truncation retains safe partial results; incomplete secret redact
 test('query parsing retains parameter names following a question mark in a value', () => {
   const result = normalize(output([endpoint('/api/items?first=a?b&second=value')]), digest);
   assert.deepEqual(result.endpoints[0].query_params, ['first', 'second']);
-  assert.equal(result.endpoints[0].value, '/api/items?first=REDACTED&second=REDACTED');
+  assert.equal(result.endpoints[0].value, '/api/items?first=a%3Fb&second=value');
 });
 
 test('repeated close cannot release a newer store lease', async (t) => {

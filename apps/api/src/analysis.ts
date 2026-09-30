@@ -23,6 +23,7 @@ import { ServiceError } from './errors.ts';
 import { type Category, finalize, merge } from './merge.ts';
 import { normalize } from './normalization.ts';
 import { decodeModules, normalizeOffline, parseOutput } from './offline.ts';
+import { confidenceFilter, endpointFilter } from './result-filters.ts';
 
 export interface EngineOptions {
   worker?: Worker;
@@ -378,6 +379,8 @@ export class AnalysisEngine {
             lineage.set(item.module.path, identity);
         }
       }
+      const keepEndpoint = endpointFilter(request);
+      const keepConfidence = confidenceFilter(request.min_confidence);
       for (const name of ['jsluice', 'trufflehog', 'graphql', 'domains'] as const) {
         const tool = tools.find((t) => t.name === name);
         if (!tool) continue;
@@ -407,6 +410,7 @@ export class AnalysisEngine {
                 result.output,
                 (v) => this.store.mac(project, v),
                 request.base_url,
+                request.redact_query_values,
               );
               for (const value of [...normalized.endpoints, ...normalized.secrets])
                 for (const e of value.evidence) {
@@ -415,8 +419,12 @@ export class AnalysisEngine {
                 }
               addSensitive(normalized.sensitive);
               redactIncomplete ||= normalized.secretsTruncated;
-              merge(response, 'endpoints', normalized.endpoints);
-              merge(response, 'secrets', normalized.secrets);
+              merge(
+                response,
+                'endpoints',
+                normalized.endpoints.filter(keepConfidence).filter(keepEndpoint),
+              );
+              merge(response, 'secrets', normalized.secrets.filter(keepConfidence));
               reasons(normalized.reasons);
               if (!normalized.partial) remember(result);
               if (normalized.partial) {
@@ -442,9 +450,9 @@ export class AnalysisEngine {
                 throw new Error('Invalid domain.');
               addSensitive(normalized.sensitive);
               if (name === 'trufflehog' && output.partial) redactIncomplete = true;
-              merge(response, 'secrets', normalized.secrets);
-              merge(response, 'gql_operations', normalized.gql_operations);
-              merge(response, 'subdomains', normalized.subdomains);
+              merge(response, 'secrets', normalized.secrets.filter(keepConfidence));
+              merge(response, 'gql_operations', normalized.gql_operations.filter(keepConfidence));
+              merge(response, 'subdomains', normalized.subdomains.filter(keepConfidence));
               reasons(output.reasons);
               if (!output.partial) remember(result);
               if (output.partial) {
@@ -477,6 +485,7 @@ export class AnalysisEngine {
         }
       }
       finalize(response, [...sensitive], redactIncomplete, (v) => this.store.mac(project, v));
+      response.endpoints = response.endpoints.filter(keepEndpoint);
       if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
       if (performance.now() >= deadline) {
         const last = (

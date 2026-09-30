@@ -199,16 +199,72 @@ test('secrets merge across detectors and mask endpoints after both detectors fin
   assert.ok(r.endpoints[0].value.includes('REDACTED'));
 });
 test('a TruffleHog-only finding masks a jsluice URL and keeps fingerprint stable', async (t) => {
-  const value = 'syntheticSecretValue';
+  const value = 'synthetic Secret&Value';
   const engine = setup(t, {
-    jsluice: worker(() => jsluice([endpoint(`/a/${value}`)])),
+    jsluice: worker(() => jsluice([endpoint(`/a/${value}?q=${encodeURIComponent(value)}`)])),
     trufflehog: worker(offline({ findings: [{ kind: 'Example', value, extra: '' }] })),
   });
   const a = await analyze(engine, ['jsluice', 'trufflehog']),
     b = await analyze(engine, ['trufflehog', 'jsluice']);
   assert.ok(!JSON.stringify(a).includes(value));
+  assert.equal(a.endpoints[0].value, '/a/REDACTED?q=REDACTED');
   assert.equal(a.secrets[0].fingerprint, b.secrets[0].fingerprint);
   assert.equal(a.endpoints[0].id, b.endpoints[0].id);
+});
+
+test('Confidence filtering retains high findings while hidden secrets still protect their values', async (t) => {
+  const value = 'SyntheticHiddenSecret';
+  const engine = setup(t, {
+    jsluice: worker(() => jsluice([endpoint(`/api?q=${value}`)])),
+    trufflehog: worker(offline({ findings: [{ kind: 'Example', value, extra: '' }] })),
+    graphql: worker(
+      offline({
+        findings: [
+          {
+            operation_type: 'query',
+            name: 'Viewer',
+            variables: [],
+            root_fields: ['viewer'],
+            document_hash: `sha256:${'a'.repeat(64)}`,
+            endpoint_id: null,
+            location: null,
+          },
+          {
+            operation_type: 'query',
+            name: value,
+            variables: [],
+            root_fields: ['viewer'],
+            document_hash: `sha256:${'b'.repeat(64)}`,
+            endpoint_id: null,
+            location: null,
+          },
+        ],
+      }),
+    ),
+    domains: worker(
+      offline({
+        findings: [
+          { hostname: 'api.example.com', reference_domain: 'example.com', location: null },
+        ],
+      }),
+    ),
+  });
+  const tools = ['jsluice', 'trufflehog', 'graphql', 'domains'];
+  const medium = await analyze(engine, tools, undefined, {
+    reference_domains: ['example.com'],
+    min_confidence: 'medium',
+  });
+  assert.equal(medium.endpoints[0].value, '/api?q=REDACTED');
+  const high = await analyze(engine, tools, undefined, {
+    reference_domains: ['example.com'],
+    min_confidence: 'high',
+  });
+  assert.deepEqual(high.endpoints, []);
+  assert.deepEqual(high.secrets, []);
+  assert.equal(high.gql_operations.length, 1);
+  assert.equal(high.gql_operations[0].name, 'Viewer');
+  assert.equal(high.subdomains.length, 1);
+  assert.equal(JSON.stringify(high).includes(value), false);
 });
 test('default profile runs every tool and adds domains only with reference domains', async (t) => {
   const workers = Object.fromEntries(
@@ -389,7 +445,7 @@ test('redaction cannot turn URL credentials or query values into visible path te
         ]),
       ),
     });
-    const response = await analyze(engine, ['jsluice']);
+    const response = await analyze(engine, ['jsluice'], undefined, { redact_query_values: true });
     const json = JSON.stringify(response);
     for (const raw of ['fixture-user', 'fixture-password', 'fixture-query', 'fixture-fragment'])
       assert.ok(!json.includes(raw), raw);

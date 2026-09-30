@@ -6,6 +6,49 @@ import { ajv, schema, selectedTools, validateContract } from '../dist/index.js';
 
 const read = (name) =>
   JSON.parse(readFileSync(new URL(`../examples/${name}.json`, import.meta.url), 'utf8'));
+test('Endpoint filters validate scope, reference and bounded extension lists without mutation', () => {
+  for (const options of [
+    {},
+    { endpoint_scope: 'all', exclude_extensions: [] },
+    { endpoint_scope: 'same_fqdn', base_url: 'https://app.example.com/' },
+    { endpoint_scope: 'same_domain', base_url: 'https://app.example.co.uk/' },
+    { exclude_extensions: ['css', '.PNG', 'js.map'] },
+    { redact_query_values: false, min_confidence: 'low' },
+    { redact_query_values: true, min_confidence: 'medium' },
+    { min_confidence: 'high' },
+  ]) {
+    const input = { content: 'const x = 1;', ...options };
+    const original = structuredClone(input);
+    assert.equal(validateContract('AnalyzeRequest', input).ok, true);
+    assert.deepEqual(input, original);
+  }
+  assert.equal(
+    validateContract('AnalyzeRequest', {
+      url: 'https://cdn.example.com/a.js',
+      endpoint_scope: 'same_domain',
+    }).ok,
+    true,
+  );
+  for (const options of [
+    { endpoint_scope: 'same_fqdn' },
+    { endpoint_scope: 'same_domain' },
+    { endpoint_scope: 'unknown' },
+    { redact_query_values: 'false' },
+    { redact_query_values: null },
+    { min_confidence: 'unknown' },
+    { min_confidence: 1 },
+    { exclude_extensions: 'css' },
+    { exclude_extensions: [''] },
+    { exclude_extensions: ['*.css'] },
+    { exclude_extensions: ['css', 'css'] },
+    { exclude_extensions: ['a'.repeat(33)] },
+    { exclude_extensions: Array.from({ length: 101 }, (_, i) => `ext${i}`) },
+  ])
+    assert.equal(
+      validateContract('AnalyzeRequest', { content: 'const x = 1;', ...options }).ok,
+      false,
+    );
+});
 for (const fixture of read('valid')) {
   test(`valid: ${fixture.name}`, () => {
     const original = structuredClone(fixture.data);

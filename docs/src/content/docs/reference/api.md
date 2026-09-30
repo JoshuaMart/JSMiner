@@ -33,13 +33,23 @@ Retourne `{"status":"ok","storage":"ready"}` si SQLite et le superviseur sont di
 | `content` | string | Script non vide ; exclusif avec `url` ; 10 MiB UTF-8 maximum |
 | `tools` | string[] | Facultatif ; liste non vide, sans doublons, d’identifiants connus |
 | `script_hash` | string | Facultatif ; `sha256:` puis 64 hexadécimaux minuscules, hash du contenu intégral attendu |
-| `base_url` | string | Facultatif ; URL HTTP(S) du document, utilisée uniquement pour résoudre les chemins observés |
+| `base_url` | string | Facultatif ; URL HTTP(S) du document, utilisée pour résoudre les chemins observés et comme référence des filtres |
+| `redact_query_values` | boolean | `false` par défaut ; `true` masque toutes les valeurs query des endpoints |
+| `min_confidence` | string | Seuil inclusif pour les quatre catégories : `low` (défaut), `medium` ou `high` |
+| `endpoint_scope` | string | `all` (défaut), `same_fqdn` ou `same_domain` ; filtre uniquement les endpoints |
+| `exclude_extensions` | string[] | Extensions à exclure des endpoints ; liste vide par défaut, 100 entrées maximum de 32 caractères |
 | `reference_domains` | string[] | Facultatif ; domaines racines servant à classifier les sous-domaines observés |
 
 
 Les URL sont limitées à 4 096 caractères ; les domaines de référence à 20 noms DNS ASCII sans wildcard. Le corps JSON est limité à 64 Mio et ne doit pas être compressé. Le mode `url` accepte les destinations publiques par défaut, selon la [politique de capture](/reference/configuration/#capture-url).
 
 `script_hash` est recalculé avant consultation du cache. Pour Fingerprinter, voir la [convention de hash](/architecture/storage/#compatibilité-fingerprinter). `base_url` n’est pas déduite de l’URL du script et ne déclenche aucune requête ; sans elle, les chemins relatifs restent non résolus.
+
+`same_fqdn` compare les noms d’hôte (sans tenir compte du schéma ni du port) ; `same_domain` compare les domaines enregistrables, sous-domaines inclus, avec les suffixes publics et privés de la [Public Suffix List via tldts](https://github.com/remusao/tldts). La référence est `base_url`, sinon `url` ; avec `content`, une portée restreinte exige `base_url` (`400` sinon). Pour une IP ou un hôte sans domaine enregistrable, la comparaison reste exacte. Les destinations indéterminables sont exclues d’une portée restreinte.
+
+`exclude_extensions` accepte par exemple `css`, `.PNG` et `js.map` : comparaison sans casse sur la fin du nom de fichier, après décodage URL, sans query ni fragment. Ces deux filtres ne concernent que les endpoints. Les exclusions volontaires ne constituent pas une troncature ; les limites d’extraction restent applicables. Voir l’[exemple combiné](/guides/analysis/#filtrer-les-endpoints).
+
+`min_confidence: "medium"` conserve `medium` et `high` ; `"high"` ne conserve que `high`. Les secrets détectés restent masqués même si leur observation est exclue par ce seuil. `redact_query_values: false` conserve les autres valeurs query ; `true` les remplace toutes par `REDACTED`. Ces options ne modifient pas les sources conservées.
 
 Sans `tools`, le profil comprend `webcrack`, `wakaru`, `jsluice`, `trufflehog`, `graphql`, et `domains` si des domaines de référence sont fournis. Une sélection explicite remplace ce profil. L’ordre de la liste n’impose pas celui d’exécution ; les [outils](/reference/tools/) suivent le [pipeline](/architecture/pipeline/).
 

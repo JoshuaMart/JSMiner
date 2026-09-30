@@ -113,7 +113,7 @@
       "content": "﻿const ville=\"été 🥐\"; fetch(\"/api/search?q=fixture\");\r\n",
       "reference_domains": ["example.com"],
       "expected": {
-        "endpoints": ["/api/search?q=REDACTED"],
+        "endpoints": ["/api/search?q=fixture"],
         "secrets": [],
         "gql_operations": [],
         "subdomains": []

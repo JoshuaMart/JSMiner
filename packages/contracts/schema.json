@@ -76,6 +76,35 @@
         "base_url": {
           "$ref": "#/$defs/HttpUrl"
         },
+        "redact_query_values": {
+          "type": "boolean",
+          "default": false,
+          "description": "Mask all endpoint query values. Detected secrets remain masked regardless of this option."
+        },
+        "min_confidence": {
+          "$ref": "#/$defs/Confidence",
+          "default": "low",
+          "description": "Minimum confidence retained in all four finding categories."
+        },
+        "endpoint_scope": {
+          "type": "string",
+          "enum": ["all", "same_fqdn", "same_domain"],
+          "default": "all",
+          "description": "Filter endpoints against base_url, or url when base_url is absent. same_domain uses the registrable domain including private public suffixes."
+        },
+        "exclude_extensions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^\\.?[A-Za-z0-9]+(?:\\.[A-Za-z0-9]+)*$"
+          },
+          "maxItems": 100,
+          "uniqueItems": true,
+          "default": [],
+          "description": "Exclude endpoint path suffixes, case-insensitively, with an optional leading dot (e.g. css, .png, js.map). Query strings are ignored."
+        },
         "reference_domains": {
           "type": "array",
           "items": {
@@ -96,6 +125,17 @@
         }
       ],
       "allOf": [
+        {
+          "if": {
+            "required": ["endpoint_scope"],
+            "properties": {
+              "endpoint_scope": { "enum": ["same_fqdn", "same_domain"] }
+            }
+          },
+          "then": {
+            "anyOf": [{ "required": ["base_url"] }, { "required": ["url"] }]
+          }
+        },
         {
           "if": {
             "required": ["tools"],

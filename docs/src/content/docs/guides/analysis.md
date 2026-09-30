@@ -37,6 +37,28 @@ curl --fail-with-body "$JSMINER_URL/analyze" \
   --data '{"url":"https://assets.example.com/app.js","base_url":"https://app.example.com/"}'
 ```
 
+## Filtrer les endpoints
+
+Cet exemple conserve les endpoints de `example.com` et de ses sous-domaines, en excluant les fichiers CSS et images. Utilisez `same_fqdn` pour garder uniquement `app.example.com`, ou `all` pour ne pas filtrer par domaine.
+
+```sh
+curl --fail-with-body "$JSMINER_URL/analyze" \
+  -H "Authorization: Bearer $JSMINER_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --data '{"content":"fetch(\"/api/profile\"); const image = \"/logo.png\";","tools":["jsluice"],"base_url":"https://app.example.com/","endpoint_scope":"same_domain","exclude_extensions":["css","png","jpg","svg"]}'
+```
+
+## Choisir la confiance et le masquage
+
+Cet exemple conserve les résultats de confiance `medium` ou `high` et laisse les valeurs query visibles (défaut). Passez `redact_query_values` à `true` pour toutes les masquer.
+
+```sh
+curl --fail-with-body "$JSMINER_URL/analyze" \
+  -H "Authorization: Bearer $JSMINER_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --data '{"content":"fetch(\"/api/search?q=paris\");","tools":["jsluice"],"base_url":"https://app.example.com/","min_confidence":"medium","redact_query_values":false}'
+```
+
 ## Choisir les traitements
 
 Une liste explicite remplace le profil par défaut. Ici, seul l’extracteur GraphQL analyse le contenu :

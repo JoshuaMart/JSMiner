@@ -19,7 +19,7 @@ La clé d’une étape associe le projet, son entrée exacte, la filiation des t
 
 Seules les sorties complètes validées sont réutilisables. Taille, hash et protocole sont revérifiés à la lecture ; une entrée absente, corrompue ou expirée provoque un recalcul. Une erreur ou un résultat partiel est retenté.
 
-La réponse finale est recalculée : changer `base_url` peut réutiliser l’extraction brute. Changer `reference_domains` relance le détecteur de domaines, dont cette liste fait partie de l’entrée. En mode URL, la capture reste nécessaire avant de connaître le hash.
+La réponse finale est recalculée : changer `base_url`, `endpoint_scope`, `exclude_extensions`, `min_confidence` ou `redact_query_values` peut réutiliser l’extraction brute. Les filtres s’appliquent avant l’accumulation des observations ; ils ne modifient pas le cache des outils. Changer `reference_domains` relance le détecteur de domaines, dont cette liste fait partie de l’entrée. En mode URL, la capture reste nécessaire avant de connaître le hash.
 
 ## Publication et handles
 

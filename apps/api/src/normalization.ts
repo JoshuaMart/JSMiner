@@ -60,7 +60,12 @@ const validate = new Ajv2020({ strict: false }).compile<RecordLine>({
 });
 
 /** Treat worker stdout as untrusted data; never publish its contexts or raw secret values. */
-export function normalize(output: Buffer, mac: (value: string) => string, base?: string) {
+export function normalize(
+  output: Buffer,
+  mac: (value: string) => string,
+  base?: string,
+  redactQueryValues = false,
+) {
   if (output.length > 2 * 1024 * 1024) throw new Error('Invalid worker output.');
   const text = new TextDecoder('utf-8', { fatal: true }).decode(output);
   const lines = text.trimEnd().split('\n');
@@ -143,12 +148,20 @@ export function normalize(output: Buffer, mac: (value: string) => string, base?:
       const path = separator < 0 ? withoutFragment : withoutFragment.slice(0, separator);
       const query = separator < 0 ? undefined : withoutFragment.slice(separator + 1);
       if (!path) continue;
-      const queryKeys = params(query === undefined ? [] : [...new URLSearchParams(query).keys()]);
+      const queryEntries = new URLSearchParams(query);
+      const queryKeys = params([...queryEntries.keys()]);
+      const queryValue = redactQueryValues
+        ? queryKeys.map((key) => `${encodeURIComponent(key)}=REDACTED`).join('&')
+        : [...queryEntries]
+            .filter(([key]) => queryKeys.includes(mask(key)))
+            .map(
+              ([key, value]) =>
+                `${encodeURIComponent(mask(key))}=${encodeURIComponent(mask(value))}`,
+            )
+            .join('&');
       let value =
         mask(path.replace(/^((?:https?:)?[/\\]{2}|https?:)[^/\\]*@/i, '$1')) +
-        (queryKeys.length
-          ? `?${queryKeys.map((key) => `${encodeURIComponent(key)}=REDACTED`).join('&')}`
-          : '');
+        (queryValue ? `?${queryValue}` : '');
       value = value.replace(/^((?:https?:)?[/\\]{2}|https?:)[^/\\]*@/i, '$1');
       let resolved: string | null = null;
       const dynamic = record.url.includes('EXPR');

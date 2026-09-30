@@ -7,7 +7,14 @@ export type * from './generated.js';
 export type Permission = 'analysis:write' | 'analysis:read' | 'source:read';
 export type AnalyzeRequest = Pick<
   Model.AnalyzeRequest,
-  'tools' | 'script_hash' | 'base_url' | 'reference_domains'
+  | 'tools'
+  | 'script_hash'
+  | 'base_url'
+  | 'reference_domains'
+  | 'endpoint_scope'
+  | 'exclude_extensions'
+  | 'redact_query_values'
+  | 'min_confidence'
 > &
   ({ url: string; content?: never } | { content: string; url?: never });
 
