@@ -7,7 +7,13 @@ description: Identité du contenu, cache des traitements, handles et accès born
 
 `script_hash` identifie les octets de l’entrée : `sha256:` suivi de 64 caractères hexadécimaux minuscules. Pour `content`, ce sont les octets UTF-8 de la chaîne après décodage JSON. Pour `url`, ce sont les octets du corps après décompression HTTP. La v0.1 exige un UTF-8 valide et conserve fins de ligne, BOM et espaces. Aucune mise en forme ne précède le hash.
 
-Le hash de Fingerprinter n’est réutilisable que si ses conventions correspondent. Son implémentation n’étant pas présente dans ce dépôt, cette compatibilité reste à vérifier. Un hash fourni est une assertion contrôlée par recalcul, jamais une preuve d’autorisation ni un moyen de lire le cache sans fournir l’entrée.
+La convention Fingerprinter a été vérifiée au commit `32142b243f02b45432d79ac31d2dc223eb20e7f3` : SHA-256 hexadécimal minuscule **sans préfixe**, calculé sur le **corps CDP complet**, après `Network.getResponseBody` et décodage base64 éventuel. La branche texte utilise les octets UTF-8 de la chaîne déjà décodée par Chrome. Le code Go ne retire pas de BOM et ne normalise pas les fins de ligne ; le navigateur a toutefois pu transformer le contenu avant CDP. Voir les [preuves et limites](/reference/phase-1-validation/#fingerprinter--convention-vérifiée).
+
+La limite de 2 MiB reste réservée aux détecteurs et n’intervient plus dans le hash des scripts. Fingerprinter exige un chargement signalé terminé et omet le hash en cas de corps vide, d’échec, d’annulation ou de dépassement de sa limite de hash de **32 MiB**. Il ne publie jamais volontairement le hash d’un préfixe. CDP ne fournit cependant pas de preuve de complétude du corps retourné.
+
+**Décision : conserver le hash intégral de JSMiner.** Le client ajoute `sha256:` à un hash Fingerprinter disponible pour en faire une assertion sur les octets soumis. JSMiner conserve son plafond d’entrée de 10 MiB et devra recalculer le hash. Sans hash amont, ou si l’identité des octets n’est pas établie, le client peut omettre le champ facultatif `script_hash`. L’ancienne convention tronquée, antérieure au correctif, ne doit pas être réutilisée comme identité de contenu complet ; les anciens hashes nécessitent une nouvelle capture ou doivent être ignorés.
+
+Un hash fourni reste une assertion contrôlée par recalcul, jamais une preuve d’autorisation ni un moyen de lire le cache sans fournir l’entrée. Le contrat prévoit `409 hash_mismatch` si les octets diffèrent ; cette vérification métier sera implémentée avec l’analyse et l’acquisition.
 
 L’identité d’une étape combine, sous une sérialisation canonique versionnée :
 

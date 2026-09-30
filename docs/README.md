@@ -1,6 +1,6 @@
 # Documentation JSMiner
 
-Site Astro/Starlight en français. Les pages décrivent une architecture proposée ; le moteur d’analyse n’est pas encore implémenté.
+Site Astro/Starlight en français. Le socle HTTP et les contrats sont disponibles ; le moteur d’analyse reste à implémenter.
 
 ## Commandes
 
@@ -21,4 +21,4 @@ Les pages sont dans `src/content/docs/`. La navigation est définie dans `astro.
 
 Conserver la distinction entre contraintes du produit, choix proposés, fonctionnalités implémentées et pistes ultérieures. Relier les affirmations sur les outils externes à leur documentation amont. Les exemples doivent utiliser des données fictives et rester cohérents avec le contrat API.
 
-Après modification, exécuter `pnpm build` et vérifier les liens internes. La référence API en prose fait foi pendant cette phase de conception ; un contrat OpenAPI et ses exemples validés sont prévus avant l’implémentation HTTP.
+Après modification, exécuter `pnpm build` et vérifier les liens internes. `packages/contracts/schema.json` à la racine du dépôt définit les structures canoniques ; les invariants transversaux sont dans son validateur TypeScript. OpenAPI et les types sont générés. Exécuter `pnpm check` à la racine pour contrôler leur synchronisation et les exemples JSON de la référence API.

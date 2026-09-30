@@ -1,0 +1,84 @@
+{
+  "status": "upstream-code-verified-conditional",
+  "upstream": {
+    "repository": "https://github.com/JoshuaMart/Fingerprinter",
+    "commit": "32142b243f02b45432d79ac31d2dc223eb20e7f3",
+    "functions": [
+      "internal/browser/pool.go:buildScripts",
+      "internal/browser/script_hash.go:scriptHash"
+    ],
+    "algorithm": "sha256",
+    "encoding": "lowercase hex without prefix",
+    "input": "CDP body: base64 decoded when flagged, otherwise UTF-8 bytes of the returned string",
+    "max_body_bytes": 33554432,
+    "scope": "Synthetic CDP responses against upstream production code; browser charset/BOM decoding not exercised",
+    "limit_behavior": "omit hash, never hash a truncated prefix",
+    "requires_loading_finished": true
+  },
+  "vectors": [
+    {
+      "name": "ascii",
+      "utf8_hex": "666574636828222f6170692f70726f66696c6522293b",
+      "sha256": "4e9f0ba12af4dcdfe6ac3d9213717c3e3e9dee807889e783cb57b0f6d65e38be",
+      "byte_length": 22
+    },
+    {
+      "name": "bom",
+      "utf8_hex": "efbbbf666574636828222f6170692f70726f66696c6522293b",
+      "sha256": "eb75fcb0b74c651c823e936bee8040433b9a97e136daf74903464784978b37e6",
+      "byte_length": 25
+    },
+    {
+      "name": "lf",
+      "utf8_hex": "636f6e73742078203d20313b0a",
+      "sha256": "95befdd6e691d4d89031a2a2901cc74fc6242109980b060e08ddf87829924483",
+      "byte_length": 13
+    },
+    {
+      "name": "crlf",
+      "utf8_hex": "636f6e73742078203d20313b0d0a",
+      "sha256": "355ab905a92884783a7d78e42a46d0e750df71e71ef37c51216772a689a383cd",
+      "byte_length": 14
+    },
+    {
+      "name": "unicode",
+      "utf8_hex": "636f6e73742076696c6c65203d2022506172697320f09fa590223b",
+      "sha256": "19986932e5e13bbcec9051799720248296b12b5557d58f7f3f974dec60af0d00",
+      "byte_length": 27
+    }
+  ],
+  "boundary_vectors": [
+    {
+      "name": "at-former-2mib-limit",
+      "repeat_count": 2097152,
+      "suffix": "",
+      "byte_length": 2097152,
+      "jsminer_sha256": "5256ec18f11624025905d057d6befb03d77b243511ac5f77ed5e0221ce6d84b5",
+      "fingerprinter_sha256": "5256ec18f11624025905d057d6befb03d77b243511ac5f77ed5e0221ce6d84b5"
+    },
+    {
+      "name": "suffix-b-after-2mib",
+      "repeat_count": 2097152,
+      "suffix": "b",
+      "byte_length": 2097153,
+      "jsminer_sha256": "7603e6773fe035271eca09d39e22d0220145b9eaeba5ab227adca76bb2a6566c",
+      "fingerprinter_sha256": "7603e6773fe035271eca09d39e22d0220145b9eaeba5ab227adca76bb2a6566c"
+    },
+    {
+      "name": "utf8-across-2mib",
+      "repeat_count": 2097151,
+      "suffix": "é",
+      "byte_length": 2097153,
+      "jsminer_sha256": "2894a224b959c11847479cccc5e7b8461e6efcbfcf846041e17f7a6e23b70429",
+      "fingerprinter_sha256": "2894a224b959c11847479cccc5e7b8461e6efcbfcf846041e17f7a6e23b70429"
+    },
+    {
+      "name": "suffix-c-after-2mib",
+      "repeat_count": 2097152,
+      "suffix": "c",
+      "byte_length": 2097153,
+      "jsminer_sha256": "2ae7ab16aa560c74898a2c41a531768d42ec3d45929ebefaf6028158a203d4a3",
+      "fingerprinter_sha256": "2ae7ab16aa560c74898a2c41a531768d42ec3d45929ebefaf6028158a203d4a3"
+    }
+  ]
+}

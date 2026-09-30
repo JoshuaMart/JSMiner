@@ -1,0 +1,814 @@
+[
+  {
+    "name": "neither-input",
+    "schema": "AnalyzeRequest",
+    "data": {},
+    "status": 400
+  },
+  {
+    "name": "both-inputs",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "url": "https://app.example.com/a.js",
+      "content": "x"
+    },
+    "status": 400
+  },
+  {
+    "name": "unknown-field",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "content": "x",
+      "project_id": "other"
+    },
+    "status": 400
+  },
+  {
+    "name": "unknown-tool",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "content": "x",
+      "tools": [
+        "shell"
+      ]
+    },
+    "status": 400
+  },
+  {
+    "name": "duplicate-tools",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "content": "x",
+      "tools": [
+        "jsluice",
+        "jsluice"
+      ]
+    },
+    "status": 400
+  },
+  {
+    "name": "empty-tools",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "content": "x",
+      "tools": []
+    },
+    "status": 400
+  },
+  {
+    "name": "wrong-type",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "content": 42
+    },
+    "status": 400
+  },
+  {
+    "name": "null-content",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "content": null
+    },
+    "status": 400
+  },
+  {
+    "name": "empty-content",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "content": ""
+    },
+    "status": 422
+  },
+  {
+    "name": "domains-without-reference",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "content": "x",
+      "tools": [
+        "domains"
+      ]
+    },
+    "status": 422
+  },
+  {
+    "name": "bad-domain",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "content": "x",
+      "reference_domains": [
+        "*.example.com"
+      ]
+    },
+    "status": 400
+  },
+  {
+    "name": "bad-scheme",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "url": "file:///tmp/input.js"
+    },
+    "status": 400
+  },
+  {
+    "name": "credential-url",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "url": "https://user:password@example.com/a.js"
+    },
+    "status": 400
+  },
+  {
+    "name": "bad-hash",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "content": "x",
+      "script_hash": "sha256:bad"
+    },
+    "status": 400
+  },
+  {
+    "name": "zero-limit",
+    "schema": "SourceListQuery",
+    "data": {
+      "limit": 0
+    },
+    "status": 400
+  },
+  {
+    "name": "too-many",
+    "schema": "SourceListQuery",
+    "data": {
+      "limit": 101
+    },
+    "status": 400
+  },
+  {
+    "name": "extra-query",
+    "schema": "SourceListQuery",
+    "data": {
+      "limit": 1,
+      "other": true
+    },
+    "status": 400
+  },
+  {
+    "name": "numeric-string",
+    "schema": "SourceListQuery",
+    "data": {
+      "limit": "2"
+    },
+    "status": 400
+  },
+  {
+    "name": "negative-offset",
+    "schema": "SourceReadQuery",
+    "data": {
+      "offset": -1
+    },
+    "status": 422
+  },
+  {
+    "name": "oversized-read",
+    "schema": "SourceReadQuery",
+    "data": {
+      "max_bytes": 65537
+    },
+    "status": 422
+  },
+  {
+    "name": "short-read",
+    "schema": "SourceReadQuery",
+    "data": {
+      "max_bytes": 3
+    },
+    "status": 422
+  },
+  {
+    "name": "invalid-path-21",
+    "schema": "SourceParams",
+    "data": {
+      "handle": "ana_fixture",
+      "path": "../private"
+    },
+    "status": 400
+  },
+  {
+    "name": "invalid-path-22",
+    "schema": "SourceParams",
+    "data": {
+      "handle": "ana_fixture",
+      "path": "original/../bundle.js"
+    },
+    "status": 400
+  },
+  {
+    "name": "invalid-path-23",
+    "schema": "SourceParams",
+    "data": {
+      "handle": "ana_fixture",
+      "path": "/etc/passwd"
+    },
+    "status": 400
+  },
+  {
+    "name": "invalid-path-24",
+    "schema": "SourceParams",
+    "data": {
+      "handle": "ana_fixture",
+      "path": "original/%2e%2e/bundle.js"
+    },
+    "status": 400
+  },
+  {
+    "name": "invalid-path-25",
+    "schema": "SourceParams",
+    "data": {
+      "handle": "ana_fixture",
+      "path": "original\\bundle.js"
+    },
+    "status": 400
+  },
+  {
+    "name": "source-leak-source",
+    "schema": "AnalyzeResponse",
+    "data": {
+      "schema_version": "0.1",
+      "handle": "ana_example_01",
+      "status": "complete",
+      "script_hash": "sha256:4e9f0ba12af4dcdfe6ac3d9213717c3e3e9dee807889e783cb57b0f6d65e38be",
+      "expires_at": "2026-10-01T10:00:00Z",
+      "cache": {
+        "status": "miss"
+      },
+      "endpoints": [
+        {
+          "id": "ep_example_01",
+          "value": "/api/profile",
+          "resolved_url": "https://app.example.com/api/profile",
+          "method": "GET",
+          "kind": "http_call",
+          "dynamic": false,
+          "query_params": [],
+          "body_params": [],
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "jsluice",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ]
+        }
+      ],
+      "secrets": [],
+      "gql_operations": [],
+      "subdomains": [],
+      "coverage": {
+        "endpoints": "complete",
+        "secrets": "complete",
+        "gql_operations": "not_requested",
+        "subdomains": "not_requested"
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        }
+      ],
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "warnings": [],
+      "source": "fixture content"
+    },
+    "status": 400
+  },
+  {
+    "name": "source-leak-context",
+    "schema": "AnalyzeResponse",
+    "data": {
+      "schema_version": "0.1",
+      "handle": "ana_example_01",
+      "status": "complete",
+      "script_hash": "sha256:4e9f0ba12af4dcdfe6ac3d9213717c3e3e9dee807889e783cb57b0f6d65e38be",
+      "expires_at": "2026-10-01T10:00:00Z",
+      "cache": {
+        "status": "miss"
+      },
+      "endpoints": [
+        {
+          "id": "ep_example_01",
+          "value": "/api/profile",
+          "resolved_url": "https://app.example.com/api/profile",
+          "method": "GET",
+          "kind": "http_call",
+          "dynamic": false,
+          "query_params": [],
+          "body_params": [],
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "jsluice",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ]
+        }
+      ],
+      "secrets": [],
+      "gql_operations": [],
+      "subdomains": [],
+      "coverage": {
+        "endpoints": "complete",
+        "secrets": "complete",
+        "gql_operations": "not_requested",
+        "subdomains": "not_requested"
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        }
+      ],
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "warnings": [],
+      "context": "fixture content"
+    },
+    "status": 400
+  },
+  {
+    "name": "source-leak-content",
+    "schema": "AnalyzeResponse",
+    "data": {
+      "schema_version": "0.1",
+      "handle": "ana_example_01",
+      "status": "complete",
+      "script_hash": "sha256:4e9f0ba12af4dcdfe6ac3d9213717c3e3e9dee807889e783cb57b0f6d65e38be",
+      "expires_at": "2026-10-01T10:00:00Z",
+      "cache": {
+        "status": "miss"
+      },
+      "endpoints": [
+        {
+          "id": "ep_example_01",
+          "value": "/api/profile",
+          "resolved_url": "https://app.example.com/api/profile",
+          "method": "GET",
+          "kind": "http_call",
+          "dynamic": false,
+          "query_params": [],
+          "body_params": [],
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "jsluice",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ]
+        }
+      ],
+      "secrets": [],
+      "gql_operations": [],
+      "subdomains": [],
+      "coverage": {
+        "endpoints": "complete",
+        "secrets": "complete",
+        "gql_operations": "not_requested",
+        "subdomains": "not_requested"
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        }
+      ],
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "warnings": [],
+      "content": "fixture content"
+    },
+    "status": 400
+  },
+  {
+    "name": "raw-secret",
+    "schema": "AnalyzeResponse",
+    "data": {
+      "schema_version": "0.1",
+      "handle": "ana_example_01",
+      "status": "complete",
+      "script_hash": "sha256:4e9f0ba12af4dcdfe6ac3d9213717c3e3e9dee807889e783cb57b0f6d65e38be",
+      "expires_at": "2026-10-01T10:00:00Z",
+      "cache": {
+        "status": "miss"
+      },
+      "endpoints": [
+        {
+          "id": "ep_example_01",
+          "value": "/api/profile",
+          "resolved_url": "https://app.example.com/api/profile",
+          "method": "GET",
+          "kind": "http_call",
+          "dynamic": false,
+          "query_params": [],
+          "body_params": [],
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "jsluice",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ]
+        }
+      ],
+      "secrets": [
+        {
+          "id": "sec_fixture_01",
+          "confidence": "medium",
+          "evidence": [
+            {
+              "tool": "trufflehog",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null,
+              "rule_id": "trufflehog:fixture"
+            }
+          ],
+          "kind": "fixture",
+          "rule_id": "trufflehog:fixture",
+          "masked_value": "fixture-secret-value",
+          "fingerprint": "hmac-sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "validation": "not_performed"
+        }
+      ],
+      "gql_operations": [
+        {
+          "id": "gql_fixture_01",
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "graphql",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ],
+          "operation_type": "query",
+          "name": "Profile",
+          "variables": [],
+          "root_fields": [
+            "profile"
+          ],
+          "document_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "endpoint_id": "ep_example_01"
+        }
+      ],
+      "subdomains": [
+        {
+          "id": "domain_fixture_01",
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "domains",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ],
+          "hostname": "api.example.com",
+          "reference_domain": "example.com"
+        }
+      ],
+      "coverage": {
+        "endpoints": "complete",
+        "secrets": "complete",
+        "gql_operations": "complete",
+        "subdomains": "complete"
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        },
+        {
+          "name": "trufflehog",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        },
+        {
+          "name": "graphql",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        },
+        {
+          "name": "domains",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        }
+      ],
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "warnings": []
+    },
+    "status": 400
+  },
+  {
+    "name": "source-byte-count",
+    "schema": "SourceResponse",
+    "data": {
+      "handle": "ana_example_01",
+      "path": "original/bundle.js",
+      "content": "fetch(\"/api/profile\");",
+      "offset": 0,
+      "returned_bytes": 23,
+      "total_bytes": 22,
+      "next_offset": null
+    },
+    "status": 400
+  },
+  {
+    "name": "source-next-offset",
+    "schema": "SourceResponse",
+    "data": {
+      "handle": "ana_example_01",
+      "path": "original/bundle.js",
+      "content": "fetch(\"/api/profile\");",
+      "offset": 0,
+      "returned_bytes": 22,
+      "total_bytes": 22,
+      "next_offset": 22
+    },
+    "status": 400
+  },
+  {
+    "name": "dangling-endpoint",
+    "schema": "AnalyzeResponse",
+    "data": {
+      "schema_version": "0.1",
+      "handle": "ana_example_01",
+      "status": "complete",
+      "script_hash": "sha256:4e9f0ba12af4dcdfe6ac3d9213717c3e3e9dee807889e783cb57b0f6d65e38be",
+      "expires_at": "2026-10-01T10:00:00Z",
+      "cache": {
+        "status": "miss"
+      },
+      "endpoints": [
+        {
+          "id": "ep_example_01",
+          "value": "/api/profile",
+          "resolved_url": "https://app.example.com/api/profile",
+          "method": "GET",
+          "kind": "http_call",
+          "dynamic": false,
+          "query_params": [],
+          "body_params": [],
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "jsluice",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ]
+        }
+      ],
+      "secrets": [
+        {
+          "id": "sec_fixture_01",
+          "confidence": "medium",
+          "evidence": [
+            {
+              "tool": "trufflehog",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null,
+              "rule_id": "trufflehog:fixture"
+            }
+          ],
+          "kind": "fixture",
+          "rule_id": "trufflehog:fixture",
+          "masked_value": "[REDACTED]",
+          "fingerprint": "hmac-sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "validation": "not_performed"
+        }
+      ],
+      "gql_operations": [
+        {
+          "id": "gql_fixture_01",
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "graphql",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ],
+          "operation_type": "query",
+          "name": "Profile",
+          "variables": [],
+          "root_fields": [
+            "profile"
+          ],
+          "document_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "endpoint_id": "missing"
+        }
+      ],
+      "subdomains": [
+        {
+          "id": "domain_fixture_01",
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "domains",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ],
+          "hostname": "api.example.com",
+          "reference_domain": "example.com"
+        }
+      ],
+      "coverage": {
+        "endpoints": "complete",
+        "secrets": "complete",
+        "gql_operations": "complete",
+        "subdomains": "complete"
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        },
+        {
+          "name": "trufflehog",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        },
+        {
+          "name": "graphql",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        },
+        {
+          "name": "domains",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        }
+      ],
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "warnings": []
+    },
+    "status": 400
+  },
+  {
+    "name": "duplicate-tool-runs",
+    "schema": "AnalyzeResponse",
+    "data": {
+      "schema_version": "0.1",
+      "handle": "ana_example_01",
+      "status": "complete",
+      "script_hash": "sha256:4e9f0ba12af4dcdfe6ac3d9213717c3e3e9dee807889e783cb57b0f6d65e38be",
+      "expires_at": "2026-10-01T10:00:00Z",
+      "cache": {
+        "status": "miss"
+      },
+      "endpoints": [
+        {
+          "id": "ep_example_01",
+          "value": "/api/profile",
+          "resolved_url": "https://app.example.com/api/profile",
+          "method": "GET",
+          "kind": "http_call",
+          "dynamic": false,
+          "query_params": [],
+          "body_params": [],
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "jsluice",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ]
+        }
+      ],
+      "secrets": [],
+      "gql_operations": [],
+      "subdomains": [],
+      "coverage": {
+        "endpoints": "complete",
+        "secrets": "complete",
+        "gql_operations": "not_requested",
+        "subdomains": "not_requested"
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        },
+        {
+          "name": "jsluice",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        }
+      ],
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "warnings": []
+    },
+    "status": 400
+  }
+]

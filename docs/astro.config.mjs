@@ -17,6 +17,7 @@ export default defineConfig({
 					items: [
 						{ label: 'Vision et périmètre', slug: 'guides/vision' },
 						{ label: 'Feuille de route', slug: 'guides/roadmap' },
+						{ label: 'Développement', slug: 'guides/development' },
 					],
 				},
 				{
@@ -31,6 +32,7 @@ export default defineConfig({
 					items: [
 						{ label: 'Contrat API', slug: 'reference/api' },
 						{ label: 'Modèle de résultats', slug: 'reference/results' },
+						{ label: 'Validation phase 1', slug: 'reference/phase-1-validation' },
 					],
 				},
 				{

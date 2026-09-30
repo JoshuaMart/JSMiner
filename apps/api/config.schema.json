@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ServiceConfig",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "database",
+    "tokens"
+  ],
+  "properties": {
+    "host": {
+      "type": "string",
+      "enum": [
+        "127.0.0.1",
+        "0.0.0.0"
+      ],
+      "default": "127.0.0.1"
+    },
+    "port": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "default": 3000
+    },
+    "database": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tokens": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sha256",
+          "project_id",
+          "permissions"
+        ],
+        "properties": {
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "project_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "permissions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "analysis:write",
+                "analysis:read",
+                "source:read"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "http_body_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864,
+          "default": 67108864
+        },
+        "script_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760,
+          "default": 10485760
+        },
+        "capture_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12000,
+          "default": 12000
+        },
+        "analysis_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90000,
+          "default": 90000
+        },
+        "cleanup_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "default": 10000
+        },
+        "worker_memory_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1073741824,
+          "default": 1073741824
+        },
+        "worker_cpus": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2,
+          "default": 2
+        },
+        "worker_pids": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128,
+          "default": 128
+        },
+        "artifact_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864,
+          "default": 67108864
+        },
+        "module_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000,
+          "default": 2000
+        },
+        "response_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 262144,
+          "default": 262144
+        },
+        "source_read_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65536,
+          "default": 65536
+        },
+        "active_analyses": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1,
+          "default": 1
+        },
+        "active_workers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2,
+          "default": 2
+        },
+        "storage_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1073741824,
+          "default": 1073741824
+        },
+        "retention_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400000,
+          "default": 86400000
+        },
+        "tool_ms": {
+          "type": "object",
+          "additionalProperties": false,
+          "default": {},
+          "properties": {
+            "webcrack": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25000,
+              "default": 25000
+            },
+            "wakaru": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25000,
+              "default": 25000
+            },
+            "jsluice": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 15000,
+              "default": 15000
+            },
+            "trufflehog": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 15000,
+              "default": 15000
+            },
+            "graphql": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5000,
+              "default": 5000
+            },
+            "domains": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3000,
+              "default": 3000
+            }
+          }
+        }
+      }
+    }
+  }
+}

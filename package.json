@@ -1,0 +1,26 @@
+{
+  "name": "jsminer",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": "24.21.0",
+    "pnpm": "10.33.0"
+  },
+  "scripts": {
+    "config:init": "node scripts/init-local-config.mjs",
+    "dev": "pnpm --filter @jsminer/contracts build && pnpm --filter @jsminer/api dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm --filter @jsminer/contracts build && pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "contracts:generate": "pnpm --filter @jsminer/contracts generate",
+    "contracts:check": "pnpm --filter @jsminer/contracts check",
+    "openapi:lint": "redocly lint packages/contracts/openapi.json",
+    "check": "pnpm contracts:check && pnpm openapi:lint && pnpm build && pnpm typecheck && pnpm test"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.57.0",
+    "@types/node": "24.19.0",
+    "typescript": "6.0.3"
+  }
+}

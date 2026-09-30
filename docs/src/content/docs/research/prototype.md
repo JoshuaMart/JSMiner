@@ -58,4 +58,4 @@ Le helper `_url` résout souvent les chemins avec `context.target`. Un service i
 
 ## Ce qui reste à vérifier
 
-Le calcul réel du hash dans Fingerprinter, les protections réseau de `context.can_request`, le contenu de l’image d’analyse et les schémas exacts de ses résultats ne peuvent pas être déduits de cet extrait. Ils devront être documentés avant de déclarer une compatibilité avec MAPTA.
+Les protections réseau de `context.can_request`, le contenu de l’image d’analyse et les schémas exacts de ses résultats ne peuvent pas être déduits de cet extrait. Ils devront être documentés avant de déclarer une compatibilité avec MAPTA. Le calcul du hash Fingerprinter a depuis été vérifié séparément dans son dépôt : voir le [rapport de phase 1](/reference/phase-1-validation/).

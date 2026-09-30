@@ -11,27 +11,29 @@ Les jalons J1 à J5 sont ordonnés : le jalon précédent est requis pour valide
 
 ## 1. Stabiliser les contrats
 
+**Phase 1 terminée.** Tous les critères J1 sont vérifiés dans le [rapport du 30 septembre 2026](/reference/phase-1-validation/), y compris le hash complet de Fingerprinter au commit `32142b2`.
+
 ### 1.1. Préparer le socle
 
-- [ ] Créer les espaces du service TypeScript, des adaptateurs et des contrats, séparés du site documentaire.
-- [ ] Épingler Node.js 24 et pnpm ; ajouter les commandes de développement, de compilation et de vérification des types.
-- [ ] Valider le framework HTTP, le pilote SQLite et les plateformes de déploiement sur un essai minimal.
-- [ ] Définir l’authentification, les droits par projet et la configuration des budgets.
+- [x] Créer les espaces du service TypeScript, des adaptateurs et des contrats, séparés du site documentaire.
+- [x] Épingler Node.js 24 et pnpm ; ajouter les commandes de développement, de compilation et de vérification des types.
+- [x] Valider le framework HTTP, le pilote SQLite et les plateformes de déploiement sur un essai minimal.
+- [x] Définir l’authentification, les droits par projet et la configuration des budgets.
 
 ### 1.2. Formaliser les échanges
 
-- [ ] Produire OpenAPI 3.1 et les schémas JSON à partir de la [référence API](/reference/api/).
-- [ ] Décrire l’exclusivité `url`/`content`, les outils, les erreurs et les statuts de couverture.
-- [ ] Décrire le manifeste paginé, les parents des modules et les lectures bornées en octets UTF-8.
-- [ ] Fournir des exemples valides et invalides contrôlés automatiquement par les schémas.
-- [ ] Confirmer la convention de hash de Fingerprinter sur des octets connus, incluant BOM et fins de ligne.
+- [x] Produire OpenAPI 3.1 et les schémas JSON à partir de la [référence API](/reference/api/).
+- [x] Décrire l’exclusivité `url`/`content`, les outils, les erreurs et les statuts de couverture.
+- [x] Décrire le manifeste paginé, les parents des modules et les lectures bornées en octets UTF-8.
+- [x] Fournir des exemples valides et invalides contrôlés automatiquement par les schémas.
+- [x] Confirmer la convention de hash de Fingerprinter sur des octets connus, incluant BOM et fins de ligne.
 
 ### Jalon J1 — Contrats et socle validés
 
-- [ ] Une installation depuis un clone propre compile le socle et passe la vérification des types.
-- [ ] Les exemples attendus sont acceptés ou refusés conformément au contrat, y compris les entrées ambiguës et les outils inconnus.
-- [ ] La compatibilité du hash avec Fingerprinter et les choix d’accès/déploiement sont documentés avec leurs preuves.
-- [ ] **J1 validé** — renseigner le commit ou rapport de validation.
+- [x] Une installation depuis un clone propre compile le socle et passe la vérification des types.
+- [x] Les exemples attendus sont acceptés ou refusés conformément au contrat, y compris les entrées ambiguës et les outils inconnus.
+- [x] La compatibilité du hash avec Fingerprinter et les choix d’accès/déploiement sont documentés avec leurs preuves.
+- [x] **J1 validé** — [rapport du 30 septembre 2026](/reference/phase-1-validation/), incluant la convention Fingerprinter et ses limites.
 
 ## 2. Construire le parcours hors ligne minimal
 
@@ -163,19 +165,15 @@ Ces pistes n’entrent pas dans les critères de livraison de J5. Chaque extensi
 
 ## Décision retenue
 
-**TypeScript pour le service**, validé par le mainteneur. Le choix du langage est clos ; les détails d’exécution restent qualifiés par les essais ci-dessous.
+**TypeScript pour le service**, validé par le mainteneur. Le socle retient Node.js 24.21.0, pnpm 10.33.0, Fastify et SQLite intégré. L’instance privée utilise des jetons opaques rattachés à un projet et des droits définis côté serveur. L’essai sur macOS arm64 et Linux amd64 est consigné dans le [rapport de phase 1](/reference/phase-1-validation/). La supervision des workers et l’exploitation complète restent à qualifier.
 
 ## Décisions ouvertes
 
 | Sujet | Proposition actuelle | Élément attendu |
 | --- | --- | --- |
-| Runtime du service | Node.js 24 pour l’API, l’orchestration et le worker webcrack isolé | Essai HTTP, stockage et supervision ; versions épinglées (J1) |
-| Framework HTTP | Fastify | Essai du schéma et des limites de corps (J1) |
 | Profil de transformation | webcrack → Wakaru par défaut, repli sur l’original | Mesure de la chaîne et de chaque outil seul sur corpus |
 | Détection des secrets | TruffleHog hors ligne, complété par jsluice | Précision, rappel, coût et normalisation des sorties |
-| Authentification | Instance privée, droits par projet | Contexte de déploiement et gestion des identités |
-| Stockage | SQLite et fichiers privés | Volume et concurrence réellement nécessaires |
-| Hash Fingerprinter | SHA-256 des octets analysés | Contrat du composant amont |
+| Dimensionnement du stockage | SQLite et fichiers privés, instance unique | Volume et concurrence réellement nécessaires (J5) |
 | Source maps | Après v0.1, fournies ou embarquées | Format d’entrée auxiliaire explicite |
 
 Une décision devient acceptée lorsqu’elle est consignée dans la documentation avec ses conséquences ; une fonctionnalité devient implémentée lorsque ses critères de validation passent.

@@ -1,0 +1,1219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jsminer.local/contracts/0.1/schema.json",
+  "title": "JSMinerContract",
+  "$defs": {
+    "ToolName": {
+      "type": "string",
+      "enum": [
+        "webcrack",
+        "wakaru",
+        "jsluice",
+        "trufflehog",
+        "graphql",
+        "domains"
+      ],
+      "title": "ToolName"
+    },
+    "Permission": {
+      "type": "string",
+      "enum": [
+        "analysis:write",
+        "analysis:read",
+        "source:read"
+      ],
+      "title": "Permission"
+    },
+    "Hash": {
+      "type": "string",
+      "minLength": 71,
+      "maxLength": 71,
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Hash"
+    },
+    "Identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Identifier"
+    },
+    "HttpUrl": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "format": "uri",
+      "pattern": "^https?://[^\\s/?#]+(?:[/?#][^\\s]*)?$",
+      "title": "HttpUrl"
+    },
+    "Domain": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 253,
+      "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+      "title": "Domain"
+    },
+    "ModulePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?:original|webcrack|wakaru)/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\\.(?:js|mjs|cjs|jsx|ts|tsx)$",
+      "title": "ModulePath"
+    },
+    "AnalyzeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "$ref": "#/$defs/HttpUrl"
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10485760
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToolName"
+          },
+          "minItems": 1,
+          "maxItems": 6,
+          "uniqueItems": true
+        },
+        "script_hash": {
+          "$ref": "#/$defs/Hash"
+        },
+        "base_url": {
+          "$ref": "#/$defs/HttpUrl"
+        },
+        "reference_domains": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Domain"
+          },
+          "minItems": 0,
+          "maxItems": 20,
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "oneOf": [
+        {
+          "required": [
+            "url"
+          ]
+        },
+        {
+          "required": [
+            "content"
+          ]
+        }
+      ],
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "tools"
+            ],
+            "properties": {
+              "tools": {
+                "contains": {
+                  "const": "domains"
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "reference_domains"
+            ],
+            "properties": {
+              "reference_domains": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ],
+      "description": "Exactly one of url/content. content must also be well-formed Unicode and <= 10 MiB UTF-8 (runtime refinement). Explicit domains requires reference_domains.",
+      "title": "AnalyzeRequest"
+    },
+    "SourceListQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 50
+        },
+        "cursor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      },
+      "required": [],
+      "title": "SourceListQuery"
+    },
+    "SourceReadQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "default": 0
+        },
+        "max_bytes": {
+          "type": "integer",
+          "minimum": 4,
+          "maximum": 65536,
+          "default": 16384
+        }
+      },
+      "required": [],
+      "title": "SourceReadQuery"
+    },
+    "SourceParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "handle": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "path": {
+          "$ref": "#/$defs/ModulePath"
+        }
+      },
+      "required": [
+        "handle",
+        "path"
+      ],
+      "title": "SourceParams"
+    },
+    "ManifestParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "handle": {
+          "$ref": "#/$defs/Identifier"
+        }
+      },
+      "required": [
+        "handle"
+      ],
+      "title": "ManifestParams"
+    },
+    "Location": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start_byte": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "end_byte": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "start_byte",
+        "end_byte"
+      ],
+      "title": "Location"
+    },
+    "Representation": {
+      "type": "string",
+      "enum": [
+        "original",
+        "webcrack",
+        "wakaru"
+      ],
+      "title": "Representation"
+    },
+    "Confidence": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "Confidence"
+    },
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "$ref": "#/$defs/ToolName"
+        },
+        "module_path": {
+          "$ref": "#/$defs/ModulePath"
+        },
+        "representation": {
+          "$ref": "#/$defs/Representation"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Location"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "tool",
+        "module_path",
+        "representation",
+        "location"
+      ],
+      "title": "Evidence"
+    },
+    "SecretEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "type": "string",
+          "enum": [
+            "jsluice",
+            "trufflehog"
+          ]
+        },
+        "module_path": {
+          "$ref": "#/$defs/ModulePath"
+        },
+        "representation": {
+          "$ref": "#/$defs/Representation"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Location"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rule_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^(?:jsluice|trufflehog):[A-Za-z0-9._-]+$"
+        }
+      },
+      "required": [
+        "tool",
+        "module_path",
+        "representation",
+        "location",
+        "rule_id"
+      ],
+      "title": "SecretEvidence"
+    },
+    "Endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 5
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "resolved_url": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HttpUrl"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "method": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "pattern": "^[A-Z]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "http_call",
+            "navigation",
+            "resource",
+            "literal"
+          ]
+        },
+        "dynamic": {
+          "type": "boolean"
+        },
+        "query_params": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "minItems": 0,
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "body_params": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "minItems": 0,
+          "maxItems": 128,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "confidence",
+        "evidence",
+        "value",
+        "resolved_url",
+        "method",
+        "kind",
+        "dynamic",
+        "query_params",
+        "body_params"
+      ],
+      "title": "Endpoint"
+    },
+    "Secret": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SecretEvidence"
+          },
+          "minItems": 1,
+          "maxItems": 5
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "rule_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^(?:jsluice|trufflehog):[A-Za-z0-9._-]+$"
+        },
+        "masked_value": {
+          "const": "[REDACTED]",
+          "type": "string"
+        },
+        "fingerprint": {
+          "type": "string",
+          "minLength": 76,
+          "maxLength": 76,
+          "pattern": "^hmac-sha256:[0-9a-f]{64}$"
+        },
+        "validation": {
+          "type": "string",
+          "const": "not_performed"
+        }
+      },
+      "required": [
+        "id",
+        "confidence",
+        "evidence",
+        "kind",
+        "rule_id",
+        "masked_value",
+        "fingerprint",
+        "validation"
+      ],
+      "title": "Secret"
+    },
+    "GraphqlOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 5
+        },
+        "operation_type": {
+          "type": "string",
+          "enum": [
+            "query",
+            "mutation",
+            "subscription"
+          ]
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[_A-Za-z][_0-9A-Za-z]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "type": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            },
+            "required": [
+              "name",
+              "type"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 128
+        },
+        "root_fields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "minItems": 0,
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "document_hash": {
+          "$ref": "#/$defs/Hash"
+        },
+        "endpoint_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Identifier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "confidence",
+        "evidence",
+        "operation_type",
+        "name",
+        "variables",
+        "root_fields",
+        "document_hash",
+        "endpoint_id"
+      ],
+      "title": "GraphqlOperation"
+    },
+    "Subdomain": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 1,
+          "maxItems": 5
+        },
+        "hostname": {
+          "$ref": "#/$defs/Domain"
+        },
+        "reference_domain": {
+          "$ref": "#/$defs/Domain"
+        }
+      },
+      "required": [
+        "id",
+        "confidence",
+        "evidence",
+        "hostname",
+        "reference_domain"
+      ],
+      "title": "Subdomain"
+    },
+    "CoverageStatus": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "partial",
+        "failed",
+        "not_requested"
+      ],
+      "title": "CoverageStatus"
+    },
+    "ToolRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/ToolName"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "success",
+            "partial",
+            "timeout",
+            "error",
+            "skipped"
+          ]
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "cache_hit": {
+          "type": "boolean"
+        },
+        "modules_analyzed": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "modules_available": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "input_path": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModulePath"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "status",
+        "duration_ms",
+        "cache_hit",
+        "modules_analyzed",
+        "modules_available",
+        "error_code"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "type": "string",
+                "enum": [
+                  "webcrack",
+                  "wakaru"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "input_path"
+            ],
+            "properties": {
+              "modules_analyzed": {
+                "type": "null"
+              },
+              "modules_available": {
+                "type": "null"
+              },
+              "input_path": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/ModulePath"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "input_path": false
+            }
+          }
+        }
+      ],
+      "title": "ToolRun"
+    },
+    "AnalyzeResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "0.1"
+        },
+        "handle": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial",
+            "failed"
+          ]
+        },
+        "script_hash": {
+          "$ref": "#/$defs/Hash"
+        },
+        "expires_at": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "format": "date-time"
+        },
+        "cache": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "hit",
+                "partial_hit",
+                "miss"
+              ]
+            }
+          },
+          "required": [
+            "status"
+          ]
+        },
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Endpoint"
+          },
+          "minItems": 0,
+          "maxItems": 200
+        },
+        "secrets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Secret"
+          },
+          "minItems": 0,
+          "maxItems": 200
+        },
+        "gql_operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GraphqlOperation"
+          },
+          "minItems": 0,
+          "maxItems": 200
+        },
+        "subdomains": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Subdomain"
+          },
+          "minItems": 0,
+          "maxItems": 200
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "endpoints": {
+              "$ref": "#/$defs/CoverageStatus"
+            },
+            "secrets": {
+              "$ref": "#/$defs/CoverageStatus"
+            },
+            "gql_operations": {
+              "$ref": "#/$defs/CoverageStatus"
+            },
+            "subdomains": {
+              "$ref": "#/$defs/CoverageStatus"
+            }
+          },
+          "required": [
+            "endpoints",
+            "secrets",
+            "gql_operations",
+            "subdomains"
+          ]
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToolRun"
+          },
+          "minItems": 1,
+          "maxItems": 6
+        },
+        "truncation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "truncated": {
+              "type": "boolean"
+            },
+            "reasons": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "response_bytes",
+                  "finding_count",
+                  "evidence_count",
+                  "artifact_bytes",
+                  "module_count",
+                  "field_bytes"
+                ]
+              },
+              "minItems": 0,
+              "maxItems": 6,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "truncated",
+            "reasons"
+          ]
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "tool": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/ToolName"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "tool"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "schema_version",
+        "handle",
+        "status",
+        "script_hash",
+        "expires_at",
+        "cache",
+        "endpoints",
+        "secrets",
+        "gql_operations",
+        "subdomains",
+        "coverage",
+        "tools",
+        "truncation",
+        "warnings"
+      ],
+      "title": "AnalyzeResponse"
+    },
+    "Module": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/ModulePath"
+        },
+        "origin": {
+          "$ref": "#/$defs/Representation"
+        },
+        "parent_path": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModulePath"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 67108864
+        },
+        "lines": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "hash": {
+          "$ref": "#/$defs/Hash"
+        }
+      },
+      "required": [
+        "path",
+        "origin",
+        "parent_path",
+        "bytes",
+        "lines",
+        "hash"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "origin": {
+                "const": "original"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "parent_path": {
+                "type": "null"
+              },
+              "path": {
+                "const": "original/bundle.js"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "parent_path": {
+                "$ref": "#/$defs/ModulePath"
+              }
+            }
+          }
+        }
+      ],
+      "title": "Module"
+    },
+    "ManifestResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "handle": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "expires_at": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "format": "date-time"
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Module"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "total_modules": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "handle",
+        "expires_at",
+        "modules",
+        "total_modules",
+        "next_cursor"
+      ],
+      "title": "ManifestResponse"
+    },
+    "SourceResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "handle": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "path": {
+          "$ref": "#/$defs/ModulePath"
+        },
+        "content": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 65536
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "returned_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        },
+        "total_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 67108864
+        },
+        "next_offset": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "handle",
+        "path",
+        "content",
+        "offset",
+        "returned_bytes",
+        "total_bytes",
+        "next_offset"
+      ],
+      "title": "SourceResponse"
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "request_id": {
+              "$ref": "#/$defs/Identifier"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "request_id"
+          ]
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "title": "ErrorResponse"
+    },
+    "HealthResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "const": "ok"
+        },
+        "phase": {
+          "type": "integer",
+          "const": 1
+        },
+        "storage": {
+          "type": "string",
+          "const": "ready"
+        }
+      },
+      "required": [
+        "status",
+        "phase",
+        "storage"
+      ],
+      "title": "HealthResponse"
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/AnalyzeRequest"
+    },
+    {
+      "$ref": "#/$defs/AnalyzeResponse"
+    },
+    {
+      "$ref": "#/$defs/SourceListQuery"
+    },
+    {
+      "$ref": "#/$defs/SourceReadQuery"
+    },
+    {
+      "$ref": "#/$defs/SourceParams"
+    },
+    {
+      "$ref": "#/$defs/ManifestParams"
+    },
+    {
+      "$ref": "#/$defs/ManifestResponse"
+    },
+    {
+      "$ref": "#/$defs/SourceResponse"
+    },
+    {
+      "$ref": "#/$defs/ErrorResponse"
+    },
+    {
+      "$ref": "#/$defs/HealthResponse"
+    }
+  ]
+}

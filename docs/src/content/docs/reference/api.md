@@ -1,11 +1,13 @@
 ---
 title: Contrat API
-description: Proposition v0.1 des requêtes, réponses, statuts et lectures ciblées de sources.
+description: Contrats v0.1, validation disponible et comportement métier prévu.
 ---
 
 ## Conventions
 
-**Contrat proposé, non implémenté.** JSON UTF-8, noms de champs en `snake_case`, dates UTC au format RFC 3339. Toutes les routes nécessitent une authentification associée à un projet. Les droits sont `analysis:write`, `analysis:read` et `source:read` ; leur mécanisme d’attribution reste à choisir. `POST /analyze` exige les deux premiers droits, les routes `/source` le troisième.
+**Contrats et validation implémentés en phase 1.** Les traitements d’analyse et de sources restent à livrer : leurs requêtes valides répondent actuellement `501 not_implemented`. JSON UTF-8, noms de champs en `snake_case`, dates UTC au format RFC 3339. Toutes les routes nécessitent un jeton Bearer opaque associé à un projet par la configuration serveur. Les droits sont `analysis:write`, `analysis:read` et `source:read`. `POST /analyze` exige les deux premiers droits, les routes `/source` le troisième. Voir le [guide de configuration](/guides/development/).
+
+Le contrat machine est `packages/contracts/schema.json`, complété par les invariants de `validateContract` ; `packages/contracts/openapi.json` est généré. Les exemples de réponses métier ci-dessous sont vérifiés comme fixtures et ne décrivent pas des traitements déjà disponibles. `GET /health`, authentifié avec `analysis:read`, vérifie réellement SQLite et répond `200` avec les champs `status: "ok"`, `phase: 1`, `storage: "ready"`.
 
 Les champs inconnus sont refusés en entrée. Les clients tolèrent les nouveaux champs de réponse. Une rupture nécessite une nouvelle version de contrat ; la réponse annonce `schema_version: "0.1"`.
 
@@ -20,11 +22,13 @@ La v0.1 est synchrone et bornée. Aucun `202` ni endpoint de polling n’est pr�
 | `url` | string | URL HTTP(S) du script ; exclusif avec `content` |
 | `content` | string | Script non vide ; exclusif avec `url` ; 10 MiB UTF-8 maximum |
 | `tools` | string[] | Facultatif ; liste non vide, sans doublons, d’identifiants connus |
-| `script_hash` | string | Facultatif ; SHA-256 attendu, recalculé avant utilisation du cache |
+| `script_hash` | string | Facultatif ; `sha256:` puis 64 hexadécimaux minuscules, hash du contenu intégral attendu |
 | `base_url` | string | Facultatif ; URL HTTP(S) du document, utilisée uniquement pour résoudre les chemins observés |
 | `reference_domains` | string[] | Facultatif ; domaines racines servant à classifier les sous-domaines observés |
 
 Limites complémentaires proposées : URL de 4 096 caractères maximum ; au plus 20 domaines de référence, sans wildcard, normalisés en noms DNS ASCII. Les paramètres de sélection ne constituent aucune autorisation réseau. Les requêtes HTTP compressées sont refusées en v0.1 ; le corps JSON est limité à 64 MiB et `content` est contrôlé après décodage.
+
+Depuis le commit `32142b2`, le hash Fingerprinter brut identifie le corps CDP complet et n’a pas le préfixe `sha256:`. Ajouter ce préfixe pour le transmettre comme assertion sur les mêmes octets ; sinon omettre `script_hash`. Les anciens hashes tronqués à 2 MiB ne doivent pas être réutilisés comme hashes complets. Le serveur devra toujours le recalculer avant le cache et refuser une différence avec `409 hash_mismatch`. Voir la [convention de hash](/architecture/storage/).
 
 `base_url` n’est pas déduite de l’URL du script : un bundle hébergé sur un CDN peut appeler l’origine de la page. Sans base explicite, les endpoints relatifs restent non résolus. Une base ne déclenche jamais de requête.
 
@@ -221,5 +225,6 @@ Paramètres : `offset` en octets UTF-8, entier positif ou nul, défaut 0 ; `max_
 | `504` | Délai d’acquisition dépassé |
 | `503` | Service indisponible ou arrêt d’un worker impossible à confirmer |
 | `500` | Échec interne de persistance ou de publication |
+| `501` | En phase 1 : entrée valide, traitement métier encore non implémenté |
 
 Les messages d’erreur n’incluent ni code source, ni sorties brutes, ni chemins locaux, ni URL contenant des données sensibles.

@@ -5,11 +5,11 @@ description: Acquisition, traitements indépendants, budgets et gestion des rés
 
 ## TypeScript et runtimes
 
-**TypeScript est retenu pour l’API et l’orchestration.** Node.js 24 est le runtime proposé pour tous les composants JavaScript du service, sous réserve de l’essai d’intégration HTTP, stockage et supervision. Une vérification de types avec `tsc --noEmit` est prévue dans la validation du futur service.
+**TypeScript et Node.js 24 sont retenus pour l’API et l’orchestration.** Le socle Node.js 24.21.0, Fastify et SQLite a passé l’essai HTTP/stockage de [phase 1](/reference/phase-1-validation/). La vérification de types `tsc --noEmit` fait partie de `pnpm check`. Le worker Node.js et sa supervision restent à qualifier lors de leur intégration.
 
 Le [README de webcrack](https://github.com/j4k0xb/webcrack) annonce Node.js 22/24 et une dépendance à `isolated-vm`. Utiliser Node.js 24 pour l’API et ce worker limite le nombre de runtimes JavaScript à maintenir et à qualifier. Le worker reste un processus isolé : l’API le pilote au travers du même contrat d’artefacts que les autres outils.
 
-Wakaru utilise un binaire autonome ; jsluice et TruffleHog sont aussi invoqués comme outils externes isolés. Les versions des runtimes, outils et images sont épinglées. Le site documentaire conserve son environnement Astro/pnpm actuel et pnpm est proposé pour les dépendances du service. Un autre runtime pourra être réévalué si les mesures mettent en évidence un besoin concret.
+Wakaru utilise un binaire autonome ; jsluice et TruffleHog seront aussi invoqués comme outils externes isolés. Les versions des outils et images seront épinglées lors de leur intégration. Le site documentaire conserve son environnement Astro/pnpm actuel ; pnpm 10.33.0 est épinglé pour le service. Un autre runtime pourra être réévalué si les mesures mettent en évidence un besoin concret.
 
 ## Responsabilités
 

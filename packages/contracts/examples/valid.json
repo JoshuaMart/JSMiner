@@ -1,0 +1,439 @@
+[
+  {
+    "name": "content",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "content": "fetch(\"/api/profile\");",
+      "tools": [
+        "jsluice"
+      ],
+      "base_url": "https://app.example.com/dashboard"
+    }
+  },
+  {
+    "name": "complete",
+    "schema": "AnalyzeResponse",
+    "data": {
+      "schema_version": "0.1",
+      "handle": "ana_example_01",
+      "status": "complete",
+      "script_hash": "sha256:4e9f0ba12af4dcdfe6ac3d9213717c3e3e9dee807889e783cb57b0f6d65e38be",
+      "expires_at": "2026-10-01T10:00:00Z",
+      "cache": {
+        "status": "miss"
+      },
+      "endpoints": [
+        {
+          "id": "ep_example_01",
+          "value": "/api/profile",
+          "resolved_url": "https://app.example.com/api/profile",
+          "method": "GET",
+          "kind": "http_call",
+          "dynamic": false,
+          "query_params": [],
+          "body_params": [],
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "jsluice",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ]
+        }
+      ],
+      "secrets": [],
+      "gql_operations": [],
+      "subdomains": [],
+      "coverage": {
+        "endpoints": "complete",
+        "secrets": "complete",
+        "gql_operations": "not_requested",
+        "subdomains": "not_requested"
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        }
+      ],
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "warnings": []
+    }
+  },
+  {
+    "name": "manifest",
+    "schema": "ManifestResponse",
+    "data": {
+      "handle": "ana_example_01",
+      "expires_at": "2026-10-01T10:00:00Z",
+      "modules": [
+        {
+          "path": "original/bundle.js",
+          "origin": "original",
+          "parent_path": null,
+          "bytes": 22,
+          "lines": 1,
+          "hash": "sha256:4e9f0ba12af4dcdfe6ac3d9213717c3e3e9dee807889e783cb57b0f6d65e38be"
+        }
+      ],
+      "total_modules": 1,
+      "next_cursor": null
+    }
+  },
+  {
+    "name": "source",
+    "schema": "SourceResponse",
+    "data": {
+      "handle": "ana_example_01",
+      "path": "original/bundle.js",
+      "content": "fetch(\"/api/profile\");",
+      "offset": 0,
+      "returned_bytes": 22,
+      "total_bytes": 22,
+      "next_offset": null
+    }
+  },
+  {
+    "name": "error",
+    "schema": "ErrorResponse",
+    "data": {
+      "error": {
+        "code": "invalid_input",
+        "message": "Fournir exactement un champ parmi url et content.",
+        "request_id": "req_example_01"
+      }
+    }
+  },
+  {
+    "name": "url",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "url": "https://app.example.com/bundle.js",
+      "tools": [
+        "jsluice"
+      ]
+    }
+  },
+  {
+    "name": "domains",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "content": "const x = 1;",
+      "tools": [
+        "domains"
+      ],
+      "reference_domains": [
+        "example.com"
+      ]
+    }
+  },
+  {
+    "name": "minimal",
+    "schema": "AnalyzeRequest",
+    "data": {
+      "content": "let x=1;"
+    }
+  },
+  {
+    "name": "list-bounds",
+    "schema": "SourceListQuery",
+    "data": {
+      "limit": 100
+    }
+  },
+  {
+    "name": "read-bounds",
+    "schema": "SourceReadQuery",
+    "data": {
+      "offset": 0,
+      "max_bytes": 65536
+    }
+  },
+  {
+    "name": "source-path",
+    "schema": "SourceParams",
+    "data": {
+      "handle": "ana_example_01",
+      "path": "wakaru/modules/0001.js"
+    }
+  },
+  {
+    "name": "health",
+    "schema": "HealthResponse",
+    "data": {
+      "status": "ok",
+      "phase": 1,
+      "storage": "ready"
+    }
+  },
+  {
+    "name": "partial-timeout",
+    "schema": "AnalyzeResponse",
+    "data": {
+      "schema_version": "0.1",
+      "handle": "ana_example_01",
+      "status": "partial",
+      "script_hash": "sha256:4e9f0ba12af4dcdfe6ac3d9213717c3e3e9dee807889e783cb57b0f6d65e38be",
+      "expires_at": "2026-10-01T10:00:00Z",
+      "cache": {
+        "status": "miss"
+      },
+      "endpoints": [
+        {
+          "id": "ep_example_01",
+          "value": "/api/profile",
+          "resolved_url": "https://app.example.com/api/profile",
+          "method": "GET",
+          "kind": "http_call",
+          "dynamic": false,
+          "query_params": [],
+          "body_params": [],
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "jsluice",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ]
+        }
+      ],
+      "secrets": [],
+      "gql_operations": [],
+      "subdomains": [],
+      "coverage": {
+        "endpoints": "partial",
+        "secrets": "partial",
+        "gql_operations": "not_requested",
+        "subdomains": "not_requested"
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        },
+        {
+          "name": "webcrack",
+          "version": "fixture",
+          "status": "timeout",
+          "duration_ms": 25000,
+          "cache_hit": false,
+          "modules_analyzed": null,
+          "modules_available": null,
+          "error_code": "tool_timeout",
+          "input_path": "original/bundle.js"
+        }
+      ],
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "warnings": []
+    }
+  },
+  {
+    "name": "failed-extraction",
+    "schema": "AnalyzeResponse",
+    "data": {
+      "schema_version": "0.1",
+      "handle": "ana_example_01",
+      "status": "failed",
+      "script_hash": "sha256:4e9f0ba12af4dcdfe6ac3d9213717c3e3e9dee807889e783cb57b0f6d65e38be",
+      "expires_at": "2026-10-01T10:00:00Z",
+      "cache": {
+        "status": "miss"
+      },
+      "endpoints": [],
+      "secrets": [],
+      "gql_operations": [],
+      "subdomains": [],
+      "coverage": {
+        "endpoints": "failed",
+        "secrets": "failed",
+        "gql_operations": "not_requested",
+        "subdomains": "not_requested"
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "version": "example-build",
+          "status": "error",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 0,
+          "modules_available": 1,
+          "error_code": "parse_error"
+        }
+      ],
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "warnings": []
+    }
+  },
+  {
+    "name": "all-categories",
+    "schema": "AnalyzeResponse",
+    "data": {
+      "schema_version": "0.1",
+      "handle": "ana_example_01",
+      "status": "complete",
+      "script_hash": "sha256:4e9f0ba12af4dcdfe6ac3d9213717c3e3e9dee807889e783cb57b0f6d65e38be",
+      "expires_at": "2026-10-01T10:00:00Z",
+      "cache": {
+        "status": "miss"
+      },
+      "endpoints": [
+        {
+          "id": "ep_example_01",
+          "value": "/api/profile",
+          "resolved_url": "https://app.example.com/api/profile",
+          "method": "GET",
+          "kind": "http_call",
+          "dynamic": false,
+          "query_params": [],
+          "body_params": [],
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "jsluice",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ]
+        }
+      ],
+      "secrets": [
+        {
+          "id": "sec_fixture_01",
+          "confidence": "medium",
+          "evidence": [
+            {
+              "tool": "trufflehog",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null,
+              "rule_id": "trufflehog:fixture"
+            }
+          ],
+          "kind": "fixture",
+          "rule_id": "trufflehog:fixture",
+          "masked_value": "[REDACTED]",
+          "fingerprint": "hmac-sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "validation": "not_performed"
+        }
+      ],
+      "gql_operations": [
+        {
+          "id": "gql_fixture_01",
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "graphql",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ],
+          "operation_type": "query",
+          "name": "Profile",
+          "variables": [],
+          "root_fields": [
+            "profile"
+          ],
+          "document_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "endpoint_id": "ep_example_01"
+        }
+      ],
+      "subdomains": [
+        {
+          "id": "domain_fixture_01",
+          "confidence": "high",
+          "evidence": [
+            {
+              "tool": "domains",
+              "module_path": "original/bundle.js",
+              "representation": "original",
+              "location": null
+            }
+          ],
+          "hostname": "api.example.com",
+          "reference_domain": "example.com"
+        }
+      ],
+      "coverage": {
+        "endpoints": "complete",
+        "secrets": "complete",
+        "gql_operations": "complete",
+        "subdomains": "complete"
+      },
+      "tools": [
+        {
+          "name": "jsluice",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        },
+        {
+          "name": "trufflehog",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        },
+        {
+          "name": "graphql",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        },
+        {
+          "name": "domains",
+          "version": "example-build",
+          "status": "success",
+          "duration_ms": 40,
+          "cache_hit": false,
+          "modules_analyzed": 1,
+          "modules_available": 1,
+          "error_code": null
+        }
+      ],
+      "truncation": {
+        "truncated": false,
+        "reasons": []
+      },
+      "warnings": []
+    }
+  }
+]

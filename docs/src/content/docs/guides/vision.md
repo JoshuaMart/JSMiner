@@ -15,7 +15,7 @@ Une chaîne trouvée dans un script est une **observation statique**. Elle ne pr
 - La réponse contient `endpoints`, `secrets`, `gql_operations`, `subdomains` et un `handle`.
 - La réponse d’analyse ne contient aucun code source, déplié ou original, ni sortie brute d’un outil.
 - La consultation des sources passe par un manifeste, puis par un module précis.
-- Le hash du script fourni par Fingerprinter peut servir d’identité après vérification de sa convention et des octets reçus.
+- Le hash Fingerprinter du corps CDP complet peut servir d’assertion, après adaptation du préfixe ; JSMiner le vérifie toujours sur les octets réellement analysés.
 - Chaque outil dispose de limites propres ; ses erreurs sont rapportées individuellement.
 
 ## Périmètre proposé pour la v0.1
