@@ -182,11 +182,13 @@ L’état du job contient `id`, `status`, `created_at`, `deadline_at`, `expires_
 | `failed` sans handle | Aucun résultat publié ; `error_code` indique la cause |
 | `skipped` | Non démarré : délai, annulation, arrêt ou indisponibilité du service |
 
-Le job passe de `queued` à `running`, puis à `completed` ou `timed_out`. `completed` signifie que tous les items sont terminaux, **pas qu’ils ont tous réussi**. L’annulation passe par `cancelling`, puis `cancelled` après retour des analyses actives. Un nettoyage non confirmé reste visible dans `error_code` et rend le service indisponible. Un arrêt ou redémarrage classe les jobs inachevés en `interrupted` ; aucune relance automatique. La déconnexion HTTP du client n’annule pas le job.
+Le job passe de `queued` à `running`, puis à `completed` ou `timed_out`. `completed` signifie que tous les items sont terminaux, **pas qu’ils ont tous réussi**. L’annulation passe par `cancelling`, puis `cancelled` après retour des analyses actives. Un nettoyage non confirmé reste visible dans `error_code` et rend le service indisponible. Un arrêt ou redémarrage classe les jobs inachevés en `interrupted` ; aucune relance automatique. La déconnexion HTTP du client n’annule pas le job. Un item `running` peut attendre une réservation de stockage ; cette attente compte dans son budget et reste annulable.
 
 La lecture d’un résultat sans handle retourne `409 result_unavailable`, y compris pour un item définitivement ignoré. Un index absent retourne `404`. Les jobs expirés retournent `410` pendant 24 h, puis `404`. Les handles gardent leur propre durée de rétention : un résultat peut donc expirer avant le job. Les identifiants d’un autre projet retournent `404`.
 
 Une soumission refusée pour quota retourne `429 job_capacity` ; une autre soumission dont le corps est encore en réception peut donner `429 job_submission_capacity`. Un budget supérieur au plafond serveur donne `422 job_budget_exceeded`. Un `POST` répété crée un nouveau job : il n’y a pas de clé d’idempotence.
+
+Si une erreur interne bloque l’ordonnanceur, le suivi des jobs inachevés et leurs résultats non disponibles renvoient `503 scheduler_unavailable`. Les résultats déjà publiés restent lisibles. La prise en charge d’un item est transactionnelle : une écriture échouée ne consomme pas son entrée.
 
 Les [exemples](/guides/analysis/#soumettre-un-lot) montrent la soumission, le suivi et la lecture progressive.
 
@@ -264,7 +266,7 @@ Reprendre à `next_offset` jusqu’à `null`. À la fin du fichier, le contenu e
 | `422` | Domaine de référence manquant, entrée vide/non UTF-8/HTML, paramètres source invalides |
 | `429` | Capacité d’exécution ou quota insuffisant ; `Retry-After` présent |
 | `502` | `capture_failed` : réseau, transfert tronqué ou décompression invalide ; `capture_status` : statut autre que 200, redirection comprise ; `capture_encoding` : compression non prise en charge |
-| `504` | `capture_timeout` : délai d’acquisition dépassé |
+| `504` | `capture_timeout` : acquisition expirée ; `global_deadline` : délai global dépassé avant admission au stockage ou pendant son attente |
 | `503` | Service indisponible ou arrêt d’un worker impossible à confirmer |
 | `500` | Échec interne de persistance ou de publication |
 

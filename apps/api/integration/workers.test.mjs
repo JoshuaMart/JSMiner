@@ -133,7 +133,13 @@ test('real containers enforce isolation and leave no worker after failure, timeo
     if (ids.length) await docker('rm', '--force', ...ids);
     await docker('image', 'rm', image);
   });
-  const batchWorker = new DockerWorker(image, owner, undefined, undefined, {
+  // Trigger the intended timeout during execution, after Docker has confirmed creation.
+  const batchCommand = (args, options) =>
+    dockerCommand(args, {
+      ...options,
+      timeoutMs: args[0] === 'start' ? Math.min(options.timeoutMs, 1500) : options.timeoutMs,
+    });
+  const batchWorker = new DockerWorker(image, owner, batchCommand, undefined, {
     version: JSLUICE_VERSION,
     protocol: '3',
     command: ['batch-timeout'],
@@ -141,7 +147,7 @@ test('real containers enforce isolation and leave no worker after failure, timeo
   });
   const batch = await batchWorker.runBatch({
     contents: [Buffer.from('first'), Buffer.from('second')],
-    timeoutMs: 1500,
+    timeoutMs: 15000,
     cleanupMs: 10000,
     memoryBytes: 128 * 1024 * 1024,
     cpus: 1,
@@ -169,12 +175,18 @@ test('real containers enforce isolation and leave no worker after failure, timeo
         checked = true;
         if (scenario === 'abort') setTimeout(() => controller.abort(), 250);
       }
-      return dockerCommand(args, options);
+      return dockerCommand(args, {
+        ...options,
+        timeoutMs:
+          scenario === 'timeout' && args[0] === 'start'
+            ? Math.min(options.timeoutMs, 1500)
+            : options.timeoutMs,
+      });
     };
     const worker = new DockerWorker(image, owner, command);
     const result = await worker.run({
       content: Buffer.from(['timeout', 'abort'].includes(scenario) ? 'sleep' : scenario),
-      timeoutMs: scenario === 'timeout' ? 1500 : 15000,
+      timeoutMs: 15000,
       cleanupMs: 10000,
       memoryBytes: 128 * 1024 * 1024,
       cpus: 1,

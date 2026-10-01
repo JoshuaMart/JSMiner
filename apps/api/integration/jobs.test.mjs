@@ -102,16 +102,34 @@ test('asynchronous jobs use bounded concurrent real containers and recover the o
         if (firstResultMs === null && job.items.some((item) => item.handle))
           firstResultMs = performance.now() - start;
       }
-      assert.equal(job.status, 'completed', JSON.stringify(job));
-      assert.ok(
-        job.items.every((item) => item.status === 'complete'),
-        JSON.stringify(job),
-      );
+      const outcomes = [];
       for (const item of job.items) {
+        if (!item.handle) {
+          outcomes.push(item);
+          continue;
+        }
         const result = await app.inject({ url: `/jobs/${id}/items/${item.index}`, headers });
         assert.equal(result.statusCode, 200, result.body);
-        assert.equal(result.json().cache.status, 'miss');
+        const analysis = result.json();
+        outcomes.push({
+          index: item.index,
+          status: analysis.status,
+          tools: analysis.tools.map(({ name, status, error_code, duration_ms }) => ({
+            name,
+            status,
+            error_code,
+            duration_ms,
+          })),
+          truncation: analysis.truncation,
+        });
+        assert.equal(analysis.cache.status, 'miss');
       }
+      const diagnostic = JSON.stringify({ concurrency, status: job.status, items: outcomes });
+      assert.equal(job.status, 'completed', diagnostic);
+      assert.ok(
+        job.items.every((item) => item.status === 'complete'),
+        diagnostic,
+      );
       assert.equal(created, 8);
       assert.equal(active, 0);
       assert.equal(peak, concurrency);

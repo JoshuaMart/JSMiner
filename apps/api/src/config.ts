@@ -51,9 +51,22 @@ const validate = new Ajv2020({
   removeAdditional: false,
 }).compile<ServiceConfig>(configSchema);
 
+const record = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
 export function parseConfig(value: unknown, baseDirectory = process.cwd()): ServiceConfig {
   const copy: unknown = structuredClone(value);
+  const explicitTotalMemory =
+    record(copy) &&
+    record(copy.budgets) &&
+    Object.hasOwn(copy.budgets, 'total_worker_memory_bytes');
   if (!validate(copy)) throw new Error('Invalid service configuration. Check config.schema.json.');
+  // Older configurations may already reserve more than the new 4 GiB default per worker.
+  if (!explicitTotalMemory)
+    copy.budgets.total_worker_memory_bytes = Math.max(
+      copy.budgets.total_worker_memory_bytes,
+      copy.budgets.worker_memory_bytes,
+    );
   // Keep existing nonempty allowlists restrictive when upgrading an older configuration.
   copy.capture.mode ??= copy.capture.origins.length ? 'allowlist' : 'public';
   if (new Set(copy.tokens.map((t) => t.sha256)).size !== copy.tokens.length)

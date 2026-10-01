@@ -25,6 +25,7 @@ docker image inspect jsminer-jsluice:phase2 jsminer-offline:phase3
 | `EADDRINUSE` au démarrage | Choisir un port libre dans `config.json`, puis redémarrer |
 | `401` / `403 forbidden` | Vérifier le jeton et ses permissions dans la configuration |
 | `destination_denied` | Vérifier les adresses DNS (locales/privées bloquées) et, en mode `allowlist`, l’origine dans `capture.origins` |
+| `scheduler_unavailable` | Vérifier l’espace disque et les erreurs SQLite, puis redémarrer ; les résultats publiés restent consultables |
 | `script_hash_mismatch` | Comparer les octets soumis, BOM et fins de ligne compris |
 | `429 analysis_capacity` | Attendre le délai `Retry-After` |
 | `429 storage_full` | Purger les expirés et vérifier le quota ; les handles actifs sont conservés |

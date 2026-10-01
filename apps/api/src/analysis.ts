@@ -191,7 +191,7 @@ export class AnalysisEngine {
       }
       if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
       if (!this.healthy) throw new ServiceError(503, 'service_unavailable');
-      pending = this.store.prepare(project, bytes);
+      pending = await this.store.prepareAvailable(project, bytes, signal, deadline);
       const tools = names.map(
         (name): ToolRun => ({
           name,

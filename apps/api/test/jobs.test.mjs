@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, rmSync, statSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -508,4 +509,208 @@ test('cancellation never hides an unconfirmed cleanup behind job_cancelled', asy
   assert.equal(end.items[0].error_code, 'worker_cleanup_unconfirmed');
   assert.equal(end.items[0].handle, null);
   assert.equal((await app.inject({ url: '/health', headers: headers() })).statusCode, 503);
+});
+
+const tightStorage = {
+  active_analyses: 2,
+  storage_bytes: 60000,
+  artifact_bytes: 60000,
+  response_bytes: 2000,
+};
+
+test('jobs wait for temporary storage reservations and all complete without restarting extraction', async (t) => {
+  const { worker, submit, get } = await setup(t, { budgets: tightStorage });
+  const job = await submit(payload(['one', 'two', 'three']));
+  await until(() => worker.calls.length === 1);
+  await delay(60);
+  assert.equal(worker.calls.length, 1);
+  assert.ok((await get(job.id)).items.every((item) => item.status !== 'failed'));
+  for (let i = 0; i < 3; i++) {
+    await until(() => worker.calls.length === i + 1);
+    assert.equal(
+      worker.calls[i].input.content.toString(),
+      payload(['one', 'two', 'three']).items[i].content,
+    );
+    worker.calls[i].done();
+  }
+  const end = await until(async () => {
+    const row = await get(job.id);
+    return row.status === 'completed' && row;
+  });
+  assert.ok(end.items.every((item) => item.status === 'complete'));
+  assert.equal(worker.peak, 1);
+});
+
+test('storage waits respect the global deadline and cancellation before starting a worker', async (t) => {
+  const { app, worker, submit, get } = await setup(t, { budgets: tightStorage });
+  const blocker = await submit(payload(['blocker']));
+  await until(() => worker.calls.length === 1);
+  const timed = await submit(payload(['timed'], 250));
+  await until(async () => (await get(timed.id)).items[0].status === 'running');
+  const expired = await until(async () => {
+    const row = await get(timed.id);
+    return row.status === 'timed_out' && row;
+  });
+  assert.equal(expired.items[0].error_code, 'global_deadline');
+  assert.equal(expired.items[0].handle, null);
+  const cancelled = await submit(payload(['cancelled']));
+  await until(async () => (await get(cancelled.id)).items[0].status === 'running');
+  await app.inject({ method: 'DELETE', url: `/jobs/${cancelled.id}`, headers: headers() });
+  const stopped = await until(async () => {
+    const row = await get(cancelled.id);
+    return row.status === 'cancelled' && row;
+  });
+  assert.equal(stopped.items[0].error_code, 'job_cancelled');
+  assert.equal(worker.calls.length, 1);
+  worker.calls[0].done();
+  await until(async () => (await get(blocker.id)).status === 'completed');
+  await delay(30);
+  assert.equal(worker.calls.length, 1);
+});
+
+test('committed storage exhaustion fails explicitly instead of waiting indefinitely', async (t) => {
+  const { submit, get } = await setup(
+    t,
+    { budgets: tightStorage },
+    { healthy: true, run: async () => result() },
+  );
+  const job = await submit(payload(Array.from({ length: 12 }, (_, i) => `item${i}`)));
+  const end = await until(async () => {
+    const row = await get(job.id);
+    return row.status === 'completed' && row;
+  });
+  assert.ok(end.items.some((item) => item.status === 'complete'));
+  assert.ok(end.items.some((item) => item.error_code === 'storage_full'));
+  assert.ok(
+    end.items.every((item) => item.status === 'complete' || item.error_code === 'storage_full'),
+  );
+});
+
+test('a failed SQL dispatch rolls back its input and exposes scheduler failure while keeping completed results readable', async (t) => {
+  const directory = mkdtempSync(join(tmpdir(), 'jsminer-job-dispatch-'));
+  const database = join(directory, 'metadata.db');
+  let calls = 0;
+  const app = buildApp(configuration({ database }), {
+    worker: {
+      healthy: true,
+      run: async () => {
+        calls++;
+        return result();
+      },
+    },
+  });
+  let metadata;
+  t.after(async () => {
+    await app.close();
+    metadata?.close();
+    rmSync(directory, { recursive: true, force: true });
+  });
+  await app.ready();
+  const submit = (budget_ms = 5000) =>
+    app.inject({
+      method: 'POST',
+      url: '/jobs',
+      headers: headers(),
+      payload: payload(['one'], budget_ms),
+    });
+  const first = (await submit()).json();
+  await until(
+    async () =>
+      (await app.inject({ url: `/jobs/${first.id}`, headers: headers() })).json().status ===
+      'completed',
+  );
+  metadata = openMetadataStore(database);
+  metadata.database.exec(
+    "CREATE TRIGGER dispatch_fault BEFORE UPDATE OF turn ON jobs BEGIN SELECT RAISE(FAIL,'simulated write failure'); END;",
+  );
+  const pending = (await submit(200)).json();
+  await until(
+    async () => (await app.inject({ url: '/health', headers: headers() })).statusCode === 503,
+  );
+  metadata.database.exec('DROP TRIGGER dispatch_fault');
+  const stored = metadata.database
+    .prepare('SELECT status,request FROM job_items WHERE job=?')
+    .get(pending.id);
+  assert.equal(stored.status, 'queued');
+  assert.deepEqual(JSON.parse(stored.request), payload(['one']).items[0]);
+  assert.equal(
+    metadata.database.prepare('SELECT status,turn FROM jobs WHERE id=?').get(pending.id).status,
+    'queued',
+  );
+  assert.equal(calls, 1);
+  for (const path of [`/jobs/${pending.id}`, `/jobs/${pending.id}/items/0`]) {
+    const response = await app.inject({ url: path, headers: headers() });
+    assert.equal(response.statusCode, 503);
+    assert.equal(response.json().error.code, 'scheduler_unavailable');
+    assert.equal((await app.inject({ url: path, headers: headers('_other') })).statusCode, 404);
+  }
+  assert.equal(
+    (await app.inject({ url: `/jobs/${first.id}`, headers: headers() })).statusCode,
+    200,
+  );
+  assert.equal(
+    (await app.inject({ url: `/jobs/${first.id}/items/0`, headers: headers() })).statusCode,
+    200,
+  );
+  await delay(210);
+  assert.equal(
+    (await app.inject({ url: `/jobs/${pending.id}`, headers: headers() })).statusCode,
+    503,
+  );
+  assert.equal(calls, 1);
+});
+
+test('omitted aggregate memory preserves legacy per-worker budgets while explicit limits remain enforced', () => {
+  const input = configuration({ budgets: { worker_memory_bytes: 8 * 1024 ** 3 } });
+  const parsed = parseConfig(input);
+  assert.equal(parsed.budgets.total_worker_memory_bytes, 8 * 1024 ** 3);
+  assert.equal(parsed.budgets.active_analyses, 1);
+  assert.equal(Object.hasOwn(input.budgets, 'total_worker_memory_bytes'), false);
+  assert.deepEqual(parseConfig(parsed), parsed);
+  assert.equal(parseConfig(configuration()).budgets.total_worker_memory_bytes, 4 * 1024 ** 3);
+  assert.throws(
+    () =>
+      parseConfig(
+        configuration({
+          budgets: { worker_memory_bytes: 8 * 1024 ** 3, total_worker_memory_bytes: 4 * 1024 ** 3 },
+        }),
+      ),
+    /Inconsistent/,
+  );
+  assert.throws(
+    () => parseConfig(configuration({ budgets: { total_worker_memory_bytes: null } })),
+    /Invalid service configuration/,
+  );
+});
+
+test('waiting for storage retains captured URL bytes without fetching them again', async (t) => {
+  let fetches = 0;
+  const server = createServer((_request, response) => {
+    fetches++;
+    response.end('const captured=1;');
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const { worker, submit, get } = await setup(t, {
+    budgets: tightStorage,
+    capture: { origins: [{ origin, allow_private: true }] },
+  });
+  const blocker = await submit(payload(['blocker']));
+  await until(() => worker.calls.length === 1);
+  const fetched = await submit({
+    items: [{ url: `${origin}/fixture.js`, tools: ['jsluice'] }],
+    budget_ms: 5000,
+  });
+  await until(() => fetches === 1);
+  await delay(50);
+  assert.equal(worker.calls.length, 1);
+  worker.calls[0].done();
+  await until(() => worker.calls.length === 2);
+  assert.equal(worker.calls[1].input.content.toString(), 'const captured=1;');
+  worker.calls[1].done();
+  await until(async () => (await get(fetched.id)).status === 'completed');
+  assert.equal((await get(blocker.id)).items[0].status, 'complete');
+  assert.equal((await get(fetched.id)).items[0].status, 'complete');
+  assert.equal(fetches, 1);
 });

@@ -39,12 +39,14 @@ Les exemples JSON de la référence API sont testés : mettez-les à jour avec l
 | `pnpm build` / `pnpm typecheck` | Compilation / vérification des types |
 | `pnpm test` | Tests sur le dernier build |
 | `pnpm worker:build` | Construction des images |
-| `pnpm test:workers` | Intégrations Docker avec ces images |
+| `pnpm test:workers` | Intégrations Docker avec ces images, fichiers exécutés successivement |
 | `pnpm test:qualification` | Tests du banc, sans Docker |
 
 Biome est configuré dans `biome.json`. La CI exécute `pnpm check` ; le workspace documentaire est indépendant.
 
 ## Workers
+
+Les suites Docker partagent le même hôte et certaines provoquent volontairement des épuisements mémoire. `test:workers` limite donc la concurrence entre fichiers à un ; le test de jobs conserve ses deux analyses simultanées pour vérifier le parallélisme du service.
 
 Gardez cohérents versions, étiquettes d’images, protocoles et constantes des adaptateurs. Après modification : `pnpm build`, `pnpm worker:build`, puis `pnpm test:workers`.
 

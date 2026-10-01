@@ -140,7 +140,7 @@ La capacité effective est `min(active_analyses, active_workers, floor(total_wor
 }
 ```
 
-Les 4 Gio de cet exemple couvrent les conteneurs, **pas** l’API, Docker, le cache système ou les autres applications. Dimensionnez la mémoire de l’hôte ou de la VM Docker en conséquence. JSMiner réserve les plafonds configurés ; il ne mesure pas la mémoire libre de Docker pour augmenter automatiquement sa capacité. `total_worker_memory_bytes` doit être au moins égal à `worker_memory_bytes`.
+Les 4 Gio de cet exemple couvrent les conteneurs, **pas** l’API, Docker, le cache système ou les autres applications. Dimensionnez la mémoire de l’hôte ou de la VM Docker en conséquence. JSMiner réserve les plafonds configurés ; il ne mesure pas la mémoire libre de Docker pour augmenter automatiquement sa capacité. `total_worker_memory_bytes` doit être au moins égal à `worker_memory_bytes`. Lorsqu’il est omis, sa valeur est le maximum entre 4 Gio et `worker_memory_bytes` : une configuration existante à 8 Gio par worker reste donc utilisable. Une valeur explicitement insuffisante est refusée.
 
 ## File de jobs
 

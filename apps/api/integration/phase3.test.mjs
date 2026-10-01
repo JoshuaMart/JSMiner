@@ -135,7 +135,15 @@ test('Node worker enforces offline, private temporary storage and whole-containe
     pids: 32,
     signal: new AbortController().signal,
   });
-  assert.equal(result.status, 'success');
+  assert.equal(
+    result.status,
+    'success',
+    JSON.stringify({
+      status: result.status,
+      error_code: result.errorCode,
+      duration_ms: result.durationMs,
+    }),
+  );
   assert.equal(inspected, true);
   assert.equal(JSON.parse(result.output).findings[0].name, 'Q');
   assert.equal(

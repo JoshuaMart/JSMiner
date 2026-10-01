@@ -204,7 +204,8 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 68719476736,
-          "default": 4294967296
+          "default": 4294967296,
+          "description": "When omitted, the service uses at least worker_memory_bytes to preserve existing configurations."
         }
       }
     },

@@ -16,6 +16,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { DatabaseSync } from 'node:sqlite';
 import type { AnalyzeResponse, ManifestResponse, Module, SourceResponse } from '@jsminer/contracts';
 import { validateContract } from '@jsminer/contracts';
@@ -51,6 +52,7 @@ export class ArtifactStore {
   private readonly lease: DatabaseSync;
   private closed = false;
   private readonly reservations = new Map<string, number>();
+  private readonly capacityWaiters = new Set<() => void>();
   private reservedBytes(except?: string) {
     let total = 0;
     for (const [handle, bytes] of this.reservations) if (handle !== except) total += bytes;
@@ -261,13 +263,56 @@ export class ArtifactStore {
         : 0,
     );
   }
+  private minimumCapacity(bytes: number) {
+    return bytes + this.config.budgets.response_bytes + 8192 + 1024;
+  }
+  async prepareAvailable(
+    project: string,
+    bytes: Buffer,
+    signal: AbortSignal,
+    deadline: number,
+  ): Promise<Pending> {
+    for (;;) {
+      if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
+      if (performance.now() >= deadline) throw new ServiceError(504, 'global_deadline');
+      try {
+        return this.prepare(project, bytes);
+      } catch (error) {
+        // Only pending reservations can be waited on; committed handles cannot be evicted.
+        if (
+          !(error instanceof ServiceError) ||
+          error.code !== 'storage_full' ||
+          this.reservations.size === 0 ||
+          this.handleBytes() + this.minimumCapacity(bytes.length) >
+            this.config.budgets.storage_bytes
+        )
+          throw error;
+      }
+      // Keep the already captured bytes. A wakeup retries admission without another HTTP fetch.
+      await new Promise<void>((resolve, reject) => {
+        const done = (error?: ServiceError) => {
+          clearTimeout(timer);
+          signal.removeEventListener('abort', abort);
+          this.capacityWaiters.delete(wake);
+          if (error) reject(error);
+          else resolve();
+        };
+        const wake = () => done();
+        const abort = () => done(new ServiceError(503, 'analysis_cancelled'));
+        const timer = setTimeout(wake, Math.max(1, Math.ceil(deadline - performance.now())));
+        this.capacityWaiters.add(wake);
+        signal.addEventListener('abort', abort, { once: true });
+        if (signal.aborted) abort();
+      });
+    }
+  }
   prepare(project: string, bytes: Buffer): Pending {
     this.purge();
     if (bytes.length > this.config.budgets.artifact_bytes)
       throw new ServiceError(413, 'artifact_too_large');
     const used = this.handleBytes() + this.reservedBytes();
     // Include the original manifest as well as the index/storage overhead.
-    const reserved = bytes.length + this.config.budgets.response_bytes + 8192 + 1024;
+    const reserved = this.minimumCapacity(bytes.length);
     if (used + reserved > this.config.budgets.storage_bytes)
       throw new ServiceError(429, 'storage_full');
     const capacity = Math.min(
@@ -365,6 +410,7 @@ export class ArtifactStore {
       rmSync(pending.directory, { recursive: true, force: true });
     } finally {
       this.reservations.delete(pending.handle);
+      for (const wake of this.capacityWaiters) wake();
     }
   }
   publish(pending: Pending, response: AnalyzeResponse) {

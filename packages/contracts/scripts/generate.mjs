@@ -141,7 +141,7 @@ const document = {
         parameters: [
           param('id', 'path', ref('Identifier'), 'Job belonging to the authenticated project'),
         ],
-        responses: responses('JobResponse', [400, 401, 403, 404, 410, 500]),
+        responses: responses('JobResponse', [400, 401, 403, 404, 410, 500, 503]),
       },
       delete: {
         operationId: 'cancelJob',
@@ -151,7 +151,7 @@ const document = {
         parameters: [
           param('id', 'path', ref('Identifier'), 'Job belonging to the authenticated project'),
         ],
-        responses: responses('JobResponse', [400, 401, 403, 404, 410, 500]),
+        responses: responses('JobResponse', [400, 401, 403, 404, 410, 500, 503]),
       },
     },
     '/jobs/{id}/items/{index}': {
@@ -169,7 +169,7 @@ const document = {
             'Zero-based input index',
           ),
         ],
-        responses: responses('AnalyzeResponse', [400, 401, 403, 404, 409, 410, 500]),
+        responses: responses('AnalyzeResponse', [400, 401, 403, 404, 409, 410, 500, 503]),
       },
     },
     '/source/{handle}': {

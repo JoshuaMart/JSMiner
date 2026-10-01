@@ -76,6 +76,8 @@ export class JobQueue {
   }
   get(project: string, id: string): JobResponse {
     const row = this.lookup(project, id);
+    if (this.failed && !terminal.includes(row.status))
+      throw new ServiceError(503, 'scheduler_unavailable');
     return {
       id,
       status: row.status,
@@ -86,12 +88,16 @@ export class JobQueue {
     };
   }
   result(project: string, id: string, index: number) {
-    this.lookup(project, id);
+    const row = this.lookup(project, id);
     const item = this.db
       .prepare('SELECT handle FROM job_items WHERE job=? AND idx=?')
       .get(id, index);
     if (!item) throw new ServiceError(404, 'not_found');
-    if (!item.handle) throw new ServiceError(409, 'result_unavailable');
+    if (!item.handle) {
+      if (this.failed && !terminal.includes(row.status))
+        throw new ServiceError(503, 'scheduler_unavailable');
+      throw new ServiceError(409, 'result_unavailable');
+    }
     return this.engine.store.result(project, String(item.handle));
   }
   create(project: string, request: JobRequest): JobResponse {
@@ -213,14 +219,21 @@ export class JobQueue {
         if (!row) break;
         const controller = new AbortController(),
           key = `${row.id}:${row.idx}`;
-        this.db
-          .prepare("UPDATE job_items SET status='running',request=NULL WHERE job=? AND idx=?")
-          .run(row.id, row.idx);
-        this.db
-          .prepare(
-            "UPDATE jobs SET status='running',turn=(SELECT coalesce(max(turn),0)+1 FROM jobs) WHERE id=?",
-          )
-          .run(row.id);
+        this.db.exec('BEGIN IMMEDIATE');
+        try {
+          this.db
+            .prepare("UPDATE job_items SET status='running',request=NULL WHERE job=? AND idx=?")
+            .run(row.id, row.idx);
+          this.db
+            .prepare(
+              "UPDATE jobs SET status='running',turn=(SELECT coalesce(max(turn),0)+1 FROM jobs) WHERE id=?",
+            )
+            .run(row.id);
+          this.db.exec('COMMIT');
+        } catch (error) {
+          this.db.exec('ROLLBACK');
+          throw error;
+        }
         const task = this.run(row, controller)
           .catch(() => {
             this.fail();
