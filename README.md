@@ -10,33 +10,14 @@
 
 A private service for static JavaScript analysis: endpoints, potential secrets, GraphQL operations, and subdomains. Results stay compact; source modules are retrieved separately using a `handle`.
 
-[Docker](#run-with-docker) · [Documentation](#documentation) · [Development](#development)
-
 ## Run with Docker
 
-Requires Docker with Linux containers. The API will be available at **http://127.0.0.1:3001**. Run steps 1 and 2 in the same terminal; initialization is only needed once.
+Requires Docker with Linux containers. The API runs at **http://127.0.0.1:3001**, with persistent data in `jsminer-data`.
 
 <details>
-<summary><strong>Images and release tags</strong></summary>
+<summary><strong>Pull, initialize and start</strong></summary>
 
-The validation workflow publishes these images to GHCR for `linux/amd64` and `linux/arm64` after its checks pass:
-
-| Image | Role |
-| --- | --- |
-| `ghcr.io/joshuamart/jsminer` | HTTP API |
-| `ghcr.io/joshuamart/jsminer-jsluice` | jsluice worker |
-| `ghcr.io/joshuamart/jsminer-offline` | Transformations, TruffleHog, GraphQL and domain extraction |
-
-Pushes to `main` publish `latest`; Git tags starting with `v` publish the same image tag. Every publication also includes `sha-<full-commit-sha>`. Images become available after the first successful publication. If the packages are private, run `docker login ghcr.io` first.
-
-The API orchestrates two worker images: a standalone Go binary for jsluice, and a Node.js environment for webcrack, Wakaru, GraphQL and domain extraction, which also includes the TruffleHog binary. Both worker images run offline in temporary containers started by the API.
-
-</details>
-
-<details open>
-<summary><strong>1. Pull the images and initialize storage</strong></summary>
-
-Pull all three images with the same tag:
+Run these commands in the same terminal. Initialize the volume only once.
 
 ```sh
 JSMINER_TAG=latest
@@ -44,23 +25,15 @@ JSMINER_IMAGE="ghcr.io/joshuamart/jsminer:$JSMINER_TAG"
 docker pull "$JSMINER_IMAGE"
 docker pull "ghcr.io/joshuamart/jsminer-jsluice:$JSMINER_TAG"
 docker pull "ghcr.io/joshuamart/jsminer-offline:$JSMINER_TAG"
-```
 
-Initialize the persistent volume once. This creates a private token and configuration; it refuses to overwrite existing data.
-
-```sh
+# First run only: create configuration and token.
 docker run --rm \
   --mount type=volume,src=jsminer-data,dst=/data \
   -e JSMINER_IMAGE_TAG="$JSMINER_TAG" \
   "$JSMINER_IMAGE" node /app/init-config.mjs --docker
 ```
 
-</details>
-
-<details>
-<summary><strong>2. Start the API and check authentication</strong></summary>
-
-The API uses the Docker socket to create isolated worker containers. Socket access grants control of the Docker host; workers receive neither this socket nor network access. The following commands keep the API running as a non-root user with the socket's group:
+Start the API:
 
 ```sh
 JSMINER_DOCKER_SOCKET=/var/run/docker.sock
@@ -69,7 +42,7 @@ JSMINER_DOCKER_GID=$(docker run --rm \
   "$JSMINER_IMAGE" stat -c '%g' /var/run/docker.sock)
 
 docker run -d --name jsminer --restart unless-stopped \
-  --group-add "$JSMINER_DOCKER_GID" \
+  --user "node:$JSMINER_DOCKER_GID" \
   --read-only --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m \
   --cap-drop=ALL --security-opt=no-new-privileges \
   --mount type=volume,src=jsminer-data,dst=/data \
@@ -84,96 +57,25 @@ curl --fail-with-body -H "Authorization: Bearer $JSMINER_TOKEN" \
 
 </details>
 
-<details>
-<summary><strong>Storage, restart and upgrades</strong></summary>
+The API uses the Docker socket to start offline workers; access to this socket grants control of the Docker host. See [operations](docs/src/content/docs/guides/operations.md#déploiement-docker) for images, upgrades and volume recovery.
 
-The host API port is **3001**; the container listens on **3000**. Configuration, credentials, SQLite, sources and cache are stored in `jsminer-data` under `.local/`. Stop with `docker stop jsminer` and resume with `docker start jsminer`. To change image tags later, update `worker_image` and `offline_worker_image` in `/data/.local/config.json`, pull the matching images and recreate the API container using the same volume.
+## Analyze JavaScript
 
-</details>
-
-## Batch jobs
-
-Submit up to 50 scripts and read each result as soon as it is available. The single-script `/analyze` route remains synchronous.
-
-<details>
-<summary><strong>Submit, poll and read results</strong></summary>
+After starting the container:
 
 ```sh
-curl --fail-with-body http://127.0.0.1:3001/jobs \
+curl --fail-with-body http://127.0.0.1:3001/analyze \
   -H "Authorization: Bearer $JSMINER_TOKEN" \
   -H 'Content-Type: application/json' \
-  --data '{"budget_ms":30000,"items":[{"content":"const x=1;","tools":["jsluice"]},{"content":"const y=2;","tools":["graphql"]}]}'
-
-JSMINER_JOB='replace with the returned id'
-curl --fail-with-body "http://127.0.0.1:3001/jobs/$JSMINER_JOB" \
-  -H "Authorization: Bearer $JSMINER_TOKEN"
-
-# Read item 0 once its status includes a handle.
-curl --fail-with-body "http://127.0.0.1:3001/jobs/$JSMINER_JOB/items/0" \
-  -H "Authorization: Bearer $JSMINER_TOKEN"
+  --data '{"content":"fetch(\"/api/profile\");","tools":["jsluice"]}'
 ```
 
-Submission returns `202` and a `Location` header. Each item accepts the same `url` or `content` and options as `/analyze`. The job budget includes queue time; cleanup can continue past the deadline. `DELETE /jobs/:id` cancels remaining work while preserving published results. HTTP disconnection does not cancel a job. Interrupted jobs are recorded after restart and are not automatically replayed.
-
-</details>
-
-<details>
-<summary><strong>Enable two simultaneous analyses</strong></summary>
-
-Add these values to your server configuration, then restart the API:
-
-```json
-{
-  "budgets": {
-    "active_analyses": 2,
-    "active_workers": 2,
-    "worker_memory_bytes": 2147483648,
-    "total_worker_memory_bytes": 4294967296
-  }
-}
-```
-
-The default is one analysis at a time. Both synchronous requests and jobs share the configured capacity. The example reserves up to 4 GiB for workers; allow additional memory for the API, Docker and the host. Queue limits and retention are documented in [server configuration](docs/src/content/docs/reference/configuration.md).
-
-</details>
+Use `/jobs` for asynchronous batches of up to 50 scripts. [More examples →](docs/src/content/docs/guides/analysis.md)
 
 ## Documentation
 
-The documentation is currently in French:
+Documentation is in French:
 
-- [Installation](docs/src/content/docs/guides/quickstart.md)
-- [Request examples](docs/src/content/docs/guides/analysis.md)
-- [Configuration](docs/src/content/docs/reference/configuration.md)
-- [HTTP API](docs/src/content/docs/reference/api.md) and [result model](docs/src/content/docs/reference/results.md)
-- [Operations](docs/src/content/docs/guides/operations.md) and [development](docs/src/content/docs/guides/development.md)
-- [Known limitations and plans beyond v0.1](docs/src/content/docs/guides/limitations.md)
-
-The documentation site has its own workspace: run `pnpm --dir docs install --frozen-lockfile`, then `pnpm --dir docs dev`.
-
-## Development
-
-<details>
-<summary><strong>Build and run from source</strong></summary>
-
-With pnpm **10.33.0** and Docker available, run from the repository root:
-
-```sh
-pnpm install --frozen-lockfile
-pnpm build
-pnpm worker:build
-pnpm config:init
-JSMINER_CONFIG="$PWD/.local/config.json" pnpm --filter @jsminer/api start
-```
-
-The workspace selects Node.js **24.21.0**. The API listens on `127.0.0.1:3000` by default. Configuration and the access token are stored in `.local/`; initialization refuses to overwrite an existing directory.
-
-</details>
-
-<details>
-<summary><strong>Validation and integration tests</strong></summary>
-
-`pnpm check` runs linting, contract checks, builds, type checks, and local tests. `pnpm test:workers` adds Docker integration tests. The [qualification harness](qualification/README.md) measures quality and resource usage against a synthetic corpus.
-
-To validate the API image locally after building the workers, run `docker build --target runtime -t jsminer-api:test .`, then `pnpm test:image`. The image test checks authentication, both worker images, and source/cache persistence across container replacement, then removes its temporary containers and volume.
-
-</details>
+- [Install from source](docs/src/content/docs/guides/quickstart.md) · [Development and tests](docs/src/content/docs/guides/development.md)
+- [API reference](docs/src/content/docs/reference/api.md) · [Results](docs/src/content/docs/reference/results.md) · [Configuration](docs/src/content/docs/reference/configuration.md)
+- [Operations](docs/src/content/docs/guides/operations.md) · [Known limitations](docs/src/content/docs/guides/limitations.md)

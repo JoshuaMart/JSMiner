@@ -13,6 +13,41 @@ Réservez l’accès à Docker à l’opérateur. Pour un accès distant, placez
 
 Les jobs inachevés deviennent `interrupted` lors d’un arrêt ou d’un redémarrage ; les résultats déjà publiés sont conservés. Les limites de [file et de concurrence](/reference/configuration/#concurrence) s’appliquent à toute l’instance.
 
+## Déploiement Docker
+
+Les commandes de démarrage sont dans le [README du dépôt](https://github.com/JoshuaMart/JSMiner#run-with-docker). Trois images sont publiées pour Linux amd64 et arm64 après validation CI :
+
+| Image GHCR | Rôle |
+| --- | --- |
+| `ghcr.io/joshuamart/jsminer` | API HTTP |
+| `ghcr.io/joshuamart/jsminer-jsluice` | Extracteur jsluice en Go |
+| `ghcr.io/joshuamart/jsminer-offline` | webcrack, Wakaru, TruffleHog, GraphQL et domaines |
+
+Utilisez le même tag pour les trois images : `latest` suit `main`, les tags Git `v*` sont repris tels quels, et `sha-<sha-complet>` fixe un commit. Pour des packages privés, authentifiez-vous avec `docker login ghcr.io`.
+
+L’API s’exécute sous `node`, avec le groupe du socket comme groupe principal. Le GID est lu dans le conteneur Linux ; un GID `0` ne rend pas l’utilisateur root. Les workers temporaires ne reçoivent ni réseau ni socket Docker.
+
+Le port hôte `3001` pointe vers le port `3000` du conteneur. Le volume `jsminer-data` contient configuration, jeton, SQLite et artefacts sous `.local/`. Arrêtez avec `docker stop jsminer`, puis reprenez avec `docker start jsminer`.
+
+Pour changer de version, modifiez `worker_image` et `offline_worker_image` dans `/data/.local/config.json`, téléchargez les trois images correspondantes et recréez le conteneur API avec le même volume.
+
+### Récupérer un volume créé en root
+
+Un démarrage avec `--user 0` peut laisser des fichiers privés appartenant à root et empêcher le retour à `node`. Arrêtez toutes les instances utilisant le volume et sauvegardez-le, puis restaurez le propriétaire de tout `/data` :
+
+```sh
+JSMINER_IMAGE=ghcr.io/joshuamart/jsminer:latest # adapter au tag de votre instance
+docker stop jsminer
+docker run --rm --user 0:0 --network none --read-only \
+  --cap-drop=ALL --cap-add=CHOWN --cap-add=DAC_OVERRIDE \
+  --security-opt=no-new-privileges \
+  --mount type=volume,src=jsminer-data,dst=/data \
+  "$JSMINER_IMAGE" chown -Rh node:node /data
+docker rm jsminer
+```
+
+Recréez ensuite l’API avec la commande du README, sans réinitialiser le volume. Cette maintenance conserve les données et leurs permissions ; elle seule utilise root, sans monter le socket Docker.
+
 ## Vérifier et diagnostiquer
 
 ```sh

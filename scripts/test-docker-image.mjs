@@ -78,8 +78,8 @@ try {
       '-d',
       '--name',
       name,
-      '--group-add',
-      group,
+      '--user',
+      `node:${group}`,
       '--read-only',
       '--tmpfs',
       '/tmp:rw,noexec,nosuid,nodev,size=64m',
@@ -116,7 +116,16 @@ try {
   };
   let base = start();
   await ready(base);
-  assert.notEqual(docker(['exec', name, 'id', '-u']).trim(), '0');
+  const uid = docker(['exec', name, 'id', '-u']).trim();
+  assert.notEqual(uid, '0');
+  assert.equal(docker(['exec', name, 'id', '-g']).trim(), group);
+  assert.ok(docker(['exec', name, 'docker', 'version', '--format', '{{.Server.Version}}']).trim());
+  const checkStorageOwner = () => {
+    for (const path of ['/data/.local/metadata.db', '/data/.local/token']) {
+      assert.equal(docker(['exec', name, 'stat', '-c', '%u:%a', path]).trim(), `${uid}:600`);
+    }
+  };
+  checkStorageOwner();
   assert.equal((await fetch(`${base}/health`)).status, 401);
   const content =
     'fetch("/api/docker-fixture"); const doc = gql`query Viewer { viewer { id } }`; const link = "https://api.example.com/v1";';
@@ -150,8 +159,48 @@ try {
   assert.equal(source.status, 200);
   assert.equal((await source.json()).content, content);
   assert.equal((await analyze()).cache.status, 'hit');
+  docker(['stop', '--time', '15', name]);
+  docker(['rm', name]);
+  // Reproduce root-owned storage on this disposable volume only.
+  const maintenance = [
+    'run',
+    '--rm',
+    '--user',
+    '0:0',
+    '--network',
+    'none',
+    '--read-only',
+    '--cap-drop=ALL',
+    '--cap-add=CHOWN',
+    '--cap-add=DAC_OVERRIDE',
+    '--security-opt=no-new-privileges',
+    '--mount',
+    volumeMount,
+    image,
+  ];
+  docker([...maintenance, 'chown', '-Rh', 'root:root', '/data']);
+  assert.throws(() =>
+    docker([
+      'run',
+      '--rm',
+      '--mount',
+      volumeMount,
+      image,
+      'test',
+      '-r',
+      '/data/.local/metadata.db',
+    ]),
+  );
+  docker([...maintenance, 'chown', '-Rh', 'node:node', '/data']);
+  base = start();
+  await ready(base);
+  checkStorageOwner();
+  const recovered = await fetch(`${base}/source/${first.handle}/original/bundle.js`, { headers });
+  assert.equal(recovered.status, 200);
+  assert.equal((await recovered.json()).content, content);
+  assert.equal((await analyze()).cache.status, 'hit');
   console.info(
-    'Docker image verified: auth, both worker images, source retention and cache after restart.',
+    `Docker image verified: non-root UID ${uid}, socket GID ${group}, auth, both worker images, source/cache retention after restart and ownership recovery.`,
   );
 } finally {
   for (const args of [

@@ -52,6 +52,15 @@ Gardez cohérents versions, étiquettes d’images, protocoles et constantes des
 
 Une image reconstruite change son identité de cache. Une modification de normalisation côté service exige aussi de revoir sa version dans la clé de cache.
 
+Pour vérifier l’image API après construction des workers :
+
+```sh
+docker build --target runtime -t jsminer-api:test .
+pnpm test:image
+```
+
+Le test couvre l’accès au socket sous un UID non-root, l’authentification, les deux images workers, la conservation des sources et du cache après redémarrage, et la récupération d’un volume appartenant à root. Ses conteneurs et son volume temporaires sont supprimés à la fin.
+
 ## Qualification
 
 La [procédure de qualification](/reference/qualification/) décrit les mesures complètes. Pour le socle Linux amd64 :
