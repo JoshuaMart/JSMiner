@@ -19,45 +19,87 @@ Toutes les routes exigent `Authorization: Bearer <jeton>`. Le projet est déterm
 | `GET /jobs/:id`, `GET /jobs/:id/items/:index` | `analysis:read` |
 | Routes `/source` | `source:read` |
 
-`POST /analyze` reste synchrone : jusqu’à 90 s de travail et un budget de nettoyage de 10 s par défaut, plus une marge réseau. Pour plusieurs scripts, utilisez les jobs asynchrones ci-dessous.
-
 ## GET /health
 
 Retourne `{"status":"ok","storage":"ready"}` si SQLite et le superviseur sont disponibles. Ce contrôle ne lance pas de worker.
 
 ## POST /analyze
 
+Analyse synchrone d’un script. Prévoir jusqu’à 90 s de travail et 10 s de nettoyage par défaut, plus la marge réseau. Pour plusieurs scripts, utiliser les [jobs](#jobs-asynchrones).
+
 ### Entrée
 
-| Champ | Type | Règle |
+Fournir exactement un champ parmi `url` et `content`. Les autres champs sont facultatifs. Corps JSON non compressé, limité à 64 Mio.
+
+| Champ | Type | Règle / défaut |
 | --- | --- | --- |
-| `url` | string | URL HTTP(S) du script ; exclusif avec `content` |
-| `content` | string | Script non vide ; exclusif avec `url` ; 10 MiB UTF-8 maximum |
-| `tools` | string[] | Facultatif ; liste non vide, sans doublons, d’identifiants connus |
-| `script_hash` | string | Facultatif ; `sha256:` puis 64 hexadécimaux minuscules, hash du contenu intégral attendu |
-| `base_url` | string | Facultatif ; URL HTTP(S) du document, utilisée pour résoudre les chemins observés et comme référence des filtres |
-| `redact_query_values` | boolean | `false` par défaut ; `true` masque toutes les valeurs query des endpoints |
-| `min_confidence` | string | Seuil inclusif pour les quatre catégories : `low` (défaut), `medium` ou `high` |
-| `endpoint_scope` | string | `all` (défaut), `same_fqdn` ou `same_domain` ; filtre uniquement les endpoints |
-| `exclude_extensions` | string[] | Extensions à exclure des endpoints ; liste vide par défaut, 100 entrées maximum de 32 caractères |
-| `reference_domains` | string[] | Facultatif ; domaines racines servant à classifier les sous-domaines observés |
+| `url` | string | URL HTTP(S), 4 096 caractères maximum ; [destinations publiques](/reference/configuration/#capture-url) par défaut |
+| `content` | string | Script non vide, 10 Mio UTF-8 maximum |
+| `tools` | string[] | Liste non vide d’[identifiants connus](/reference/tools/), sans doublons ; remplace le profil par défaut |
+| `script_hash` | string | Hash attendu : `sha256:` + 64 hexadécimaux minuscules ; vérifié avant le cache ([Fingerprinter](/architecture/storage/#compatibilité-fingerprinter)) |
+| `base_url` | string | URL HTTP(S) du document, 4 096 caractères maximum ; résout les chemins et sert de référence aux filtres, sans requête réseau |
+| `redact_query_values` | boolean | `false` ; `true` remplace toutes les valeurs query par `REDACTED`. Les secrets détectés restent toujours masqués |
+| `min_confidence` | string | Seuil inclusif : `low` (défaut), `medium`, `high` ; s’applique aux quatre catégories |
+| `endpoint_scope` | string | `all` (défaut), `same_fqdn`, `same_domain` ; endpoints uniquement |
+| `exclude_extensions` | string[] | `[]` ; extensions exclues des endpoints, 100 entrées maximum de 32 caractères |
+| `reference_domains` | string[] | Au plus 20 racines DNS ASCII sans wildcard ; obligatoire avec `domains` (`422` sinon) |
 
+Sans `tools` : `webcrack`, `wakaru`, `jsluice`, `trufflehog`, `graphql`, plus `domains` si des racines sont fournies. L’ordre d’exécution suit le [pipeline](/architecture/pipeline/), pas la liste. Des transformateurs seuls sont acceptés ; les catégories sont alors `not_requested`.
 
-Les URL sont limitées à 4 096 caractères ; les domaines de référence à 20 noms DNS ASCII sans wildcard. Le corps JSON est limité à 64 Mio et ne doit pas être compressé. Le mode `url` accepte les destinations publiques par défaut, selon la [politique de capture](/reference/configuration/#capture-url).
+<details>
+<summary>Résolution des URL et règles de filtrage</summary>
 
-`script_hash` est recalculé avant consultation du cache. Pour Fingerprinter, voir la [convention de hash](/architecture/storage/#compatibilité-fingerprinter). `base_url` n’est pas déduite de l’URL du script et ne déclenche aucune requête ; sans elle, les chemins relatifs restent non résolus.
+- `base_url` n’est pas déduite de `url` : sans elle, les chemins relatifs restent non résolus.
+- La portée compare les hôtes (`same_fqdn`, sans schéma ni port) ou les domaines enregistrables (`same_domain`, suffixes publics et privés via [tldts](https://github.com/remusao/tldts)). Référence : `base_url`, sinon `url`. Avec `content`, une portée restreinte exige `base_url` (`400` sinon). IP et hôtes sans domaine enregistrable sont comparés exactement ; destinations indéterminables exclues.
+- Les extensions (`css`, `.PNG`, `js.map`) sont comparées sans casse sur la fin du nom de fichier décodé, sans query ni fragment.
+- Les filtres ne modifient pas les sources et leurs exclusions ne sont pas des troncatures. Le masquage des secrets détectés reste actif même si leur observation est exclue par le seuil de confiance.
 
-`same_fqdn` compare les noms d’hôte (sans tenir compte du schéma ni du port) ; `same_domain` compare les domaines enregistrables, sous-domaines inclus, avec les suffixes publics et privés de la [Public Suffix List via tldts](https://github.com/remusao/tldts). La référence est `base_url`, sinon `url` ; avec `content`, une portée restreinte exige `base_url` (`400` sinon). Pour une IP ou un hôte sans domaine enregistrable, la comparaison reste exacte. Les destinations indéterminables sont exclues d’une portée restreinte.
+</details>
 
-`exclude_extensions` accepte par exemple `css`, `.PNG` et `js.map` : comparaison sans casse sur la fin du nom de fichier, après décodage URL, sans query ni fragment. Ces deux filtres ne concernent que les endpoints. Les exclusions volontaires ne constituent pas une troncature ; les limites d’extraction restent applicables. Voir l’[exemple combiné](/guides/analysis/#filtrer-les-endpoints).
+### Statuts et couverture
 
-`min_confidence: "medium"` conserve `medium` et `high` ; `"high"` ne conserve que `high`. Les secrets détectés restent masqués même si leur observation est exclue par ce seuil. `redact_query_values: false` conserve les autres valeurs query ; `true` les remplace toutes par `REDACTED`. Ces options ne modifient pas les sources conservées.
+HTTP `200` signifie qu’un résultat avec handle a été publié, même si l’analyse a échoué. Les erreurs d’acquisition ou d’infrastructure utilisent les [erreurs HTTP](#erreurs-http).
 
-Sans `tools`, le profil comprend `webcrack`, `wakaru`, `jsluice`, `trufflehog`, `graphql`, et `domains` si des domaines de référence sont fournis. Une sélection explicite remplace ce profil. L’ordre de la liste n’impose pas celui d’exécution ; les [outils](/reference/tools/) suivent le [pipeline](/architecture/pipeline/).
+| Champ | Valeurs / sens |
+| --- | --- |
+| `status` | `complete` : sans perte ; `partial` : exploitable avec erreur ou limite ; `failed` : aucun traitement exploitable |
+| `coverage[category]` | `complete`, `partial`, `failed`, `not_requested` ; porte sur les détecteurs sélectionnés |
+| `cache.status` | `hit` : tous les outils entièrement réutilisés ; `partial_hit` : certains ; `miss` : aucun |
+| `warnings` | Objets `{ code, tool }` ; `tool: null` pour un avertissement global |
 
-`domains` exige `reference_domains`, sinon `422`. Une sélection de transformateurs seuls est valide et produit des catégories `not_requested`.
+Une extraction vide réussie est `complete`, sans garantie d’exhaustivité. Une transformation échouée dégrade au plus la couverture en `partial`. Pour les secrets, un détecteur réussi et un échoué donnent `partial` ; deux échecs sans résultat donnent `failed`.
 
-### Exemple de requête
+<details>
+<summary>Détails par outil : tools[]</summary>
+
+Chaque outil demandé a une entrée, même s’il n’a pas démarré.
+
+| Champ | Sens |
+| --- | --- |
+| `status` | `success`, `partial`, `timeout`, `error`, `skipped` |
+| `error_code` | Code stable ou `null` ; voir les [outils](/reference/tools/) et le [pipeline](/architecture/pipeline/) |
+| `version` | Version/build exact, ou `null` si indisponible |
+| `duration_ms` | Travail de la requête courante ; `0` si entièrement réutilisé, hors lecture/vérification du cache |
+| `modules_analyzed` / `modules_available` | Modules analysés/proposés ; `null` pour les transformateurs |
+| `input_path` | Entrée du transformateur dans le manifeste ; absent pour les extracteurs |
+| `cache_hit` | `true` seulement si toutes les entrées sont réutilisées ; une réutilisation partielle peut rester comptée comme `miss` |
+
+Un traitement en cache garde `success`. `memory_limit` indique un épuisement mémoire ; `unpack_failed`, un bundle Wakaru conservé malgré l’échec du dépliage.
+
+</details>
+
+### Réponse bornée
+
+Plafonds : **256 Kio**, **200 observations par catégorie** par défaut, **5 preuves par observation**, **32 avertissements**, **2 048 octets par champ de découverte**. Les [budgets serveur](/reference/configuration/#budgets) permettent notamment de régler `finding_count` de 1 à 2 000.
+
+Les observations sont triées par confiance décroissante puis identifiant ; les catégories sont remplies par tours. Toute perte rend la réponse et la couverture concernée `partial`, avec `truncation.truncated: true` et un motif : `response_bytes`, `finding_count`, `evidence_count`, `artifact_bytes`, `module_count`, `field_bytes`.
+
+Les champs trop longs sont omis, sans pagination des observations perdues. La réponse ne contient ni source, ni contexte brut, ni secret en clair. Voir le [modèle de résultats](/reference/results/).
+
+<details>
+<summary>Exemple JSON complet : requête et réponse</summary>
+
+**Requête**
 
 ```json
 {
@@ -67,7 +109,7 @@ Sans `tools`, le profil comprend `webcrack`, `wakaru`, `jsluice`, `trufflehog`, 
 }
 ```
 
-### Exemple de réponse 200
+**Réponse HTTP 200**
 
 Les versions, durées et identifiants sont illustratifs ; le hash correspond à la requête ci-dessus.
 
@@ -126,71 +168,47 @@ Les versions, durées et identifiants sont illustratifs ; le hash correspond à 
 }
 ```
 
-Les formats de chaque observation et de ses preuves sont définis dans le [modèle de résultats](/reference/results/).
-
-### Statuts et couverture
-
-| Champ | Sémantique |
-| --- | --- |
-| `status` | `complete` : traitements terminés sans perte ; `partial` : travail exploitable avec erreur ou limite ; `failed` : aucun traitement exploitable |
-| `coverage[category]` | `complete`, `partial`, `failed` ou `not_requested`, pour les détecteurs sélectionnés |
-| `tools[].status` | `success`, `partial`, `timeout`, `error`, `skipped` |
-| `tools[].error_code` | Code stable ou `null` ; image absente/incompatible : `tool_unavailable` |
-| `tools[].version` | Version/build exact, ou `null` si indisponible |
-| `tools[].duration_ms` | Travail de la requête courante ; `0` pour une étape entièrement réutilisée |
-| `tools[].modules_analyzed` / `modules_available` | Modules analysés/proposés ; `null` pour les transformateurs |
-| `tools[].input_path` | Entrée du transformateur dans le manifeste ; absent pour les extracteurs |
-| `tools[].cache_hit` | `true` seulement si toutes les entrées de l’outil sont réutilisées |
-| `cache.status` | `hit` : tous les outils entièrement réutilisés ; `partial_hit` : certains ; `miss` : aucun |
-| `warnings` | Objets `{ code, tool }` ; `tool: null` pour un avertissement global |
-
-Chaque outil demandé a une entrée, même s’il n’a pas démarré. Un traitement en cache garde `success` ; sa durée exclut la lecture et la vérification du cache. Une réutilisation partielle des modules peut rester comptée comme `miss` pour cet outil.
-
-`memory_limit` signale un épuisement mémoire identifié. `unpack_failed` indique que Wakaru a conservé son bundle transformé, mais que le dépliage n’a pas abouti ; les extracteurs peuvent utiliser ce bundle.
-
-Une extraction vide réussie est `complete`, sans garantie d’exhaustivité. L’échec d’une transformation rend au plus `partial` la couverture des catégories extraites. Avec deux détecteurs de secrets, un échec et une réussite donnent `coverage.secrets: partial` ; deux échecs sans résultat donnent `failed`.
-
-Les trois statuts globaux utilisent HTTP `200` avec un handle si les artefacts ont pu être publiés. Les échecs d’acquisition ou d’infrastructure utilisent les erreurs HTTP ci-dessous.
-
-### Réponse bornée
-
-Plafonds : **256 Kio** sérialisés, **200 observations par catégorie par défaut** (paramètre serveur `budgets.finding_count`, de 1 à 2 000), **5 preuves par observation**, **32 avertissements** et **2 048 octets par champ de découverte**. Un champ trop long est omis, pas raccourci.
-
-Les résultats sont triés par confiance décroissante puis identifiant stable, et les catégories sont remplies par tours. Une perte rend la réponse et la couverture concernée `partial`, avec `truncation.truncated: true` et un motif : `response_bytes`, `finding_count`, `evidence_count`, `artifact_bytes`, `module_count` ou `field_bytes`.
-
-Il n’y a pas de pagination des observations omises. La réponse ne contient ni code source, ni contexte brut, ni valeur originale de secret.
+</details>
 
 ## Jobs asynchrones
 
 | Route | Réponse |
 | --- | --- |
-| `POST /jobs` | `202` avec l’état initial et l’en-tête `Location: /jobs/:id` |
-| `GET /jobs/:id` | État du lot et de chaque script, sans code ni observations |
-| `GET /jobs/:id/items/:index` | Réponse `AnalyzeResponse` d’un script dès sa publication |
-| `DELETE /jobs/:id` | Annulation des traitements restants ; les résultats publiés sont conservés |
+| `POST /jobs` | `202` : état initial, en-tête `Location: /jobs/:id` |
+| `GET /jobs/:id` | État du lot et de ses scripts, sans observations ni code |
+| `GET /jobs/:id/items/:index` | Résultat au format `POST /analyze` dès sa publication ; index à partir de zéro |
+| `DELETE /jobs/:id` | Annule le travail restant, conserve les résultats publiés |
 
-Le corps de soumission contient `items`, de 1 à 50 objets au format de `POST /analyze`, et éventuellement `budget_ms`. Chaque script conserve ses propres options et son propre handle ; l’index correspond à sa position dans `items`, à partir de zéro. La limite du corps HTTP s’applique au lot entier. Les options et contenus sont validés avant acceptation ; une erreur d’acquisition ou de traitement reste ensuite propre au script concerné.
+### Soumission et délai
 
-`budget_ms` vaut 90 000 par défaut (ou le plafond serveur s’il est inférieur). Il est borné par `jobs.max_budget_ms`, 300 000 par défaut. Le délai commence à l’acceptation, **attente dans la file comprise**. Une analyse reçoit au plus le temps restant et son plafond `analysis_ms`. Le nettoyage peut se poursuivre après l’échéance ; un état terminal n’est publié qu’après retour des analyses actives.
-
-L’état du job contient `id`, `status`, `created_at`, `deadline_at`, `expires_at` et `items`. Chaque item expose `index`, `status`, `handle` et `error_code` (les deux derniers peuvent être `null`).
-
-| État d’un script | Signification |
+| Champ | Règle |
 | --- | --- |
-| `queued`, `running` | En attente ou en cours |
-| `complete`, `partial`, `failed` | Statut de l’analyse publiée ; les détails sont dans son résultat |
-| `failed` sans handle | Aucun résultat publié ; `error_code` indique la cause |
-| `skipped` | Non démarré : délai, annulation, arrêt ou indisponibilité du service |
+| `items` | 1 à 50 objets au format `POST /analyze`, chacun avec ses options et son handle ; limite HTTP de 64 Mio pour le lot entier |
+| `budget_ms` | Défaut : le minimum entre 90 000 et `jobs.max_budget_ms` ; maximum : ce plafond serveur (300 000 par défaut) |
 
-Le job passe de `queued` à `running`, puis à `completed` ou `timed_out`. `completed` signifie que tous les items sont terminaux, **pas qu’ils ont tous réussi**. L’annulation passe par `cancelling`, puis `cancelled` après retour des analyses actives. Un nettoyage non confirmé reste visible dans `error_code` et rend le service indisponible. Un arrêt ou redémarrage classe les jobs inachevés en `interrupted` ; aucune relance automatique. La déconnexion HTTP du client n’annule pas le job. Un item `running` peut attendre une réservation de stockage ; cette attente compte dans son budget et reste annulable.
+Les entrées sont validées avant acceptation ; les erreurs de capture ou de traitement restent ensuite propres à chaque script. Chaque `POST` crée un nouveau job, sans clé d’idempotence.
 
-La lecture d’un résultat sans handle retourne `409 result_unavailable`, y compris pour un item définitivement ignoré. Un index absent retourne `404`. Les jobs expirés retournent `410` pendant 24 h, puis `404`. Les handles gardent leur propre durée de rétention : un résultat peut donc expirer avant le job. Les identifiants d’un autre projet retournent `404`.
+Le budget commence à l’acceptation, **attente en file comprise**. Chaque analyse reçoit au plus le temps restant et son plafond `analysis_ms`. Le nettoyage peut dépasser l’échéance ; l’état terminal attend le retour des analyses actives.
 
-Une soumission refusée pour quota retourne `429 job_capacity` ; une autre soumission dont le corps est encore en réception peut donner `429 job_submission_capacity`. Un budget supérieur au plafond serveur donne `422 job_budget_exceeded`. Un `POST` répété crée un nouveau job : il n’y a pas de clé d’idempotence.
+### Suivi
 
-Si une erreur interne bloque l’ordonnanceur, le suivi des jobs inachevés et leurs résultats non disponibles renvoient `503 scheduler_unavailable`. Les résultats déjà publiés restent lisibles. La prise en charge d’un item est transactionnelle : une écriture échouée ne consomme pas son entrée.
+Le job expose `id`, `status`, `created_at`, `deadline_at`, `expires_at`, `items`. Chaque item contient `index`, `status`, `handle` et `error_code` (ces deux derniers peuvent être `null`).
 
-Les [exemples](/guides/analysis/#soumettre-un-lot) montrent la soumission, le suivi et la lecture progressive.
+| Statut du job | Sens |
+| --- | --- |
+| `queued` → `running` | En attente, puis en cours |
+| `completed` | Tous les items sont terminaux, sans garantir leur réussite |
+| `timed_out` | Budget épuisé |
+| `cancelling` → `cancelled` | Annulation demandée, puis traitements actifs terminés |
+| `interrupted` | Arrêt ou redémarrage, sans reprise automatique |
+
+Les items passent de `queued` à `running`, puis à `complete`, `partial` ou `failed`. Un item `failed` sans handle n’a aucun résultat publié : consulter `error_code`. `skipped` signifie qu’il n’a pas démarré (délai, annulation, arrêt ou indisponibilité).
+
+La déconnexion HTTP n’annule pas le job. Les handles ont leur propre rétention et peuvent expirer avant lui. Un job expiré répond `410` pendant 24 h, puis `404`.
+
+En cas de `scheduler_unavailable`, le suivi des jobs inachevés et leurs résultats indisponibles renvoient `503` ; les résultats déjà publiés restent lisibles. Un nettoyage non confirmé apparaît dans `error_code` et rend le service indisponible.
+
+Voir les [exemples de soumission et de suivi](/guides/analysis/#soumettre-un-lot), les [quotas et la concurrence](/reference/configuration/#concurrence), et les [erreurs HTTP](#erreurs-http).
 
 ## GET /source/:handle
 
@@ -257,18 +275,17 @@ Reprendre à `next_offset` jusqu’à `null`. À la fin du fichier, le contenu e
 | `400` | JSON invalide, entrée ambiguë, outil inconnu, champ ou curseur invalide |
 | `401` | Authentification absente ou invalide |
 | `403` | Droit manquant ou `destination_denied` pour une capture refusée |
-| `404` | Handle/module inconnu ou handle appartenant à un autre projet |
-| `409` | `script_hash_mismatch` : hash annoncé différent du contenu reçu |
-| `410` | Handle expiré, tombstone encore connu du propriétaire |
+| `404` | Handle, module, job ou index inconnu ; identifiant appartenant à un autre projet |
+| `409` | `script_hash_mismatch` : hash différent ; `result_unavailable` : item sans handle, même définitivement ignoré |
+| `410` | Handle ou job expiré, tombstone encore connu du propriétaire |
 | `413` | Corps ou script trop volumineux ; `capture_too_large` avant décompression, `script_too_large` après décompression |
 | `415` | Type de requête ou compression HTTP non pris en charge |
 | `416` | Offset supérieur à la taille du module |
-| `422` | Domaine de référence manquant, entrée vide/non UTF-8/HTML, paramètres source invalides |
-| `429` | Capacité d’exécution ou quota insuffisant ; `Retry-After` présent |
+| `422` | Domaine de référence manquant, entrée vide/non UTF-8/HTML, paramètres source invalides ; `job_budget_exceeded` : budget supérieur au plafond serveur |
+| `429` | Capacité ou quota insuffisant ; `job_capacity` pour la file, `job_submission_capacity` si une soumission occupe déjà la réception ; `Retry-After` présent |
 | `502` | `capture_failed` : réseau, transfert tronqué ou décompression invalide ; `capture_status` : statut autre que 200, redirection comprise ; `capture_encoding` : compression non prise en charge |
 | `504` | `capture_timeout` : acquisition expirée ; `global_deadline` : délai global dépassé avant admission au stockage ou pendant son attente |
-| `503` | Service indisponible ou arrêt d’un worker impossible à confirmer |
+| `503` | Service indisponible, `scheduler_unavailable`, ou arrêt d’un worker impossible à confirmer |
 | `500` | Échec interne de persistance ou de publication |
-
 
 Les erreurs n’exposent ni source, ni sortie brute, ni chemin local ni URL sensible. Voir le [diagnostic opérateur](/guides/operations/#vérifier-et-diagnostiquer) pour les actions associées.
