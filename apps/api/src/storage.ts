@@ -1,7 +1,20 @@
+import { chmodSync, existsSync, lstatSync, writeFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 
 /** Open metadata storage; the artifact store owns its additional versioned migration. */
 export function openMetadataStore(path: string) {
+  if (path !== ':memory:') {
+    if (!existsSync(path)) writeFileSync(path, '', { mode: 0o600, flag: 'wx' });
+    if (!lstatSync(path).isFile() || lstatSync(path).isSymbolicLink())
+      throw new Error('Invalid metadata file.');
+    chmodSync(path, 0o600);
+    for (const suffix of ['-wal', '-shm'])
+      if (existsSync(path + suffix)) {
+        if (!lstatSync(path + suffix).isFile() || lstatSync(path + suffix).isSymbolicLink())
+          throw new Error('Invalid metadata sidecar.');
+        chmodSync(path + suffix, 0o600);
+      }
+  }
   const database = new DatabaseSync(path, {
     enableForeignKeyConstraints: true,
     allowExtension: false,

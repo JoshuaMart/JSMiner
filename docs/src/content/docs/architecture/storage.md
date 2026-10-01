@@ -15,7 +15,7 @@ Les anciens hashes de préfixe de 2 Mio ne conviennent pas. Omettez le champ si 
 
 ## Cache des traitements
 
-La clé d’une étape associe le projet, son entrée exacte, la filiation des transformations, l’image immuable, le protocole, les règles et les budgets. Elle utilise un HMAC et les versions internes `step-cache-v1` / `normalization-v4`.
+La clé d’une étape associe le projet, son entrée exacte, la filiation des transformations, l’image immuable, le protocole, les règles et les budgets. Elle utilise un HMAC et les versions internes `step-cache-v1` / `normalization-v5`.
 
 Seules les sorties complètes validées sont réutilisables. Taille, hash et protocole sont revérifiés à la lecture ; une entrée absente, corrompue ou expirée provoque un recalcul. Une erreur ou un résultat partiel est retenté.
 
@@ -35,8 +35,12 @@ Le cache appartient au quota global et évince ses entrées les plus anciennes. 
 
 La purge conserve un tombstone pendant 24 h après expiration : le propriétaire reçoit `410`, puis `404`. Les autres projets reçoivent toujours `404`.
 
+## Jobs persistants
+
+SQLite conserve les états et les requêtes en attente. Le corps d’un script disparaît de la file dès sa prise en charge ; les résultats sont lus dans les artefacts existants, sans copie dans le job. Après interruption, les résultats publiés restent accessibles et les items inachevés sont marqués comme tels. Un arrêt entre publication d’un artefact et enregistrement du handle dans le job peut laisser un résultat non associé ; il expirera normalement.
+
 ## Confidentialité et sauvegarde
 
-Le répertoire est en `0700`, les fichiers en `0600`. `.key` stabilise les HMAC et signe les curseurs ; `.lease.sqlite` porte le verrou d’instance. Les réponses HTTP utilisent `Cache-Control: no-store`.
+Le répertoire des artefacts est en `0700`, ses fichiers et la base de métadonnées en `0600`. La base et son journal peuvent contenir les scripts soumis à la file ; les suppressions logiques ne sont pas un effacement sécurisé. `.key` stabilise les HMAC et signe les curseurs ; `.lease.sqlite` porte le verrou d’instance. Les réponses HTTP utilisent `Cache-Control: no-store`.
 
 Les sources et caches peuvent contenir des secrets bruts. Voir [sauvegarder et dimensionner](/guides/operations/#sauvegarder-et-dimensionner) pour leur conservation et la [configuration](/reference/configuration/) pour les quotas.

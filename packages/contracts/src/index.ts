@@ -32,6 +32,10 @@ export const ajv = new Ajv2020({
 ajv.addSchema(schema);
 
 export interface Models {
+  JobRequest: Model.JobRequest;
+  JobResponse: Model.JobResponse;
+  JobParams: Model.JobParams;
+  JobItemParams: Model.JobItemParams;
   AnalyzeRequest: AnalyzeRequest;
   AnalyzeResponse: Model.AnalyzeResponse;
   SourceListQuery: Model.SourceListQuery;
@@ -81,6 +85,12 @@ export function validateContract<K extends keyof Models>(
         return failure('reference_domains_required', 422);
     }
     return failure();
+  }
+  if (name === 'JobRequest') {
+    for (const item of (data as Model.JobRequest).items) {
+      const checked = validateContract('AnalyzeRequest', item);
+      if (!checked.ok) return checked;
+    }
   }
   const value = data as Models[K];
   if (name === 'AnalyzeRequest') {

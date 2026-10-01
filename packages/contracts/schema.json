@@ -129,11 +129,20 @@
           "if": {
             "required": ["endpoint_scope"],
             "properties": {
-              "endpoint_scope": { "enum": ["same_fqdn", "same_domain"] }
+              "endpoint_scope": {
+                "enum": ["same_fqdn", "same_domain"]
+              }
             }
           },
           "then": {
-            "anyOf": [{ "required": ["base_url"] }, { "required": ["url"] }]
+            "anyOf": [
+              {
+                "required": ["base_url"]
+              },
+              {
+                "required": ["url"]
+              }
+            ]
           }
         },
         {
@@ -1091,6 +1100,127 @@
       },
       "required": ["status", "storage"],
       "title": "HealthResponse"
+    },
+    "JobRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/AnalyzeRequest"
+          }
+        },
+        "budget_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600000
+        }
+      },
+      "required": ["items"],
+      "title": "JobRequest"
+    },
+    "JobItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 49
+        },
+        "status": {
+          "enum": ["queued", "running", "complete", "partial", "failed", "skipped"],
+          "type": "string"
+        },
+        "handle": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Identifier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error_code": {
+          "type": ["string", "null"],
+          "maxLength": 128
+        }
+      },
+      "required": ["index", "status", "handle", "error_code"],
+      "title": "JobItem"
+    },
+    "JobResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "cancelling",
+            "completed",
+            "timed_out",
+            "cancelled",
+            "interrupted"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "deadline_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/JobItem"
+          }
+        }
+      },
+      "required": ["id", "status", "created_at", "deadline_at", "expires_at", "items"],
+      "title": "JobResponse"
+    },
+    "JobParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Identifier"
+        }
+      },
+      "required": ["id"],
+      "title": "JobParams"
+    },
+    "JobItemParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "index": {
+          "type": "string",
+          "pattern": "^(?:[0-9]|[1-4][0-9])$"
+        }
+      },
+      "required": ["id", "index"],
+      "title": "JobItemParams"
     }
   },
   "anyOf": [
@@ -1123,6 +1253,18 @@
     },
     {
       "$ref": "#/$defs/HealthResponse"
+    },
+    {
+      "$ref": "#/$defs/JobRequest"
+    },
+    {
+      "$ref": "#/$defs/JobResponse"
+    },
+    {
+      "$ref": "#/$defs/JobParams"
+    },
+    {
+      "$ref": "#/$defs/JobItemParams"
     }
   ]
 }

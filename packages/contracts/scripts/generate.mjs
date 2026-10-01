@@ -19,8 +19,8 @@ const errorDescriptions = {
   401: 'Missing or invalid credentials',
   403: 'Permission or capture policy denied',
   404: 'Unknown resource or another project',
-  409: 'Script hash mismatch',
-  410: 'Expired handle',
+  409: 'Script hash mismatch or result unavailable',
+  410: 'Expired handle or job',
   413: 'Body or script too large',
   415: 'Unsupported media type or encoding',
   416: 'Offset beyond module',
@@ -75,7 +75,7 @@ const document = {
     title: 'JSMiner API',
     version: '0.1.0',
     description:
-      'Offline content analysis with isolated webcrack, Wakaru, jsluice, TruffleHog, GraphQL and domain extractors and private source artifacts is implemented. URL acquisition and cache reuse remain unavailable.',
+      'Bounded static script analysis, URL acquisition, cached offline workers, asynchronous batch jobs and private source artifacts.',
   },
   servers: [
     {
@@ -110,6 +110,66 @@ const document = {
           'AnalyzeResponse',
           [400, 401, 403, 409, 413, 415, 422, 429, 500, 502, 503, 504],
         ),
+      },
+    },
+    '/jobs': {
+      post: {
+        operationId: 'createJob',
+        summary: 'Submit an asynchronous batch of scripts',
+        tags: ['Analysis'],
+        'x-required-permissions': ['analysis:write', 'analysis:read'],
+        requestBody: { required: true, content: json('JobRequest') },
+        responses: {
+          ...Object.fromEntries(
+            Object.entries(
+              responses('JobResponse', [400, 401, 403, 413, 415, 422, 429, 500, 503]),
+            ).filter(([code]) => code !== '200'),
+          ),
+          202: {
+            ...response('Accepted; poll the job for progressive results', 'JobResponse'),
+            headers: { Location: { schema: { type: 'string' }, description: 'Job status URL' } },
+          },
+        },
+      },
+    },
+    '/jobs/{id}': {
+      get: {
+        operationId: 'getJob',
+        summary: 'Read progress without script contents or findings',
+        tags: ['Analysis'],
+        'x-required-permissions': ['analysis:read'],
+        parameters: [
+          param('id', 'path', ref('Identifier'), 'Job belonging to the authenticated project'),
+        ],
+        responses: responses('JobResponse', [400, 401, 403, 404, 410, 500]),
+      },
+      delete: {
+        operationId: 'cancelJob',
+        summary: 'Cancel pending and running items; retain completed results',
+        tags: ['Analysis'],
+        'x-required-permissions': ['analysis:write', 'analysis:read'],
+        parameters: [
+          param('id', 'path', ref('Identifier'), 'Job belonging to the authenticated project'),
+        ],
+        responses: responses('JobResponse', [400, 401, 403, 404, 410, 500]),
+      },
+    },
+    '/jobs/{id}/items/{index}': {
+      get: {
+        operationId: 'getJobResult',
+        summary: 'Read one completed analysis result',
+        tags: ['Analysis'],
+        'x-required-permissions': ['analysis:read'],
+        parameters: [
+          param('id', 'path', ref('Identifier'), 'Job belonging to the authenticated project'),
+          param(
+            'index',
+            'path',
+            { type: 'integer', minimum: 0, maximum: 49 },
+            'Zero-based input index',
+          ),
+        ],
+        responses: responses('AnalyzeResponse', [400, 401, 403, 404, 409, 410, 500]),
       },
     },
     '/source/{handle}': {
@@ -161,6 +221,8 @@ const document = {
               'SourceReadQuery',
               'SourceParams',
               'ManifestParams',
+              'JobParams',
+              'JobItemParams',
             ].includes(name),
         ),
       ),

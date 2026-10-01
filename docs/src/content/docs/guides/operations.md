@@ -11,6 +11,8 @@ JSMINER_CONFIG="$PWD/.local/config.json" pnpm --filter @jsminer/api start
 
 Réservez l’accès à Docker à l’opérateur. Pour un accès distant, placez l’API derrière un proxy TLS privé et désactivez la journalisation des corps de requête/réponse du proxy.
 
+Les jobs inachevés deviennent `interrupted` lors d’un arrêt ou d’un redémarrage ; les résultats déjà publiés sont conservés. Les limites de [file et de concurrence](/reference/configuration/#concurrence) s’appliquent à toute l’instance.
+
 ## Vérifier et diagnostiquer
 
 ```sh

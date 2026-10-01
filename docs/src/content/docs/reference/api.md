@@ -15,9 +15,11 @@ Toutes les routes exigent `Authorization: Bearer <jeton>`. Le projet est déterm
 | --- | --- |
 | `GET /health` | `analysis:read` |
 | `POST /analyze` | `analysis:write` et `analysis:read` |
+| `POST /jobs`, `DELETE /jobs/:id` | `analysis:write` et `analysis:read` |
+| `GET /jobs/:id`, `GET /jobs/:id/items/:index` | `analysis:read` |
 | Routes `/source` | `source:read` |
 
-L’analyse est synchrone. Prévoyez les 90 s de travail et 10 s de nettoyage par défaut, plus une marge réseau. Il n’existe pas de route de polling.
+`POST /analyze` reste synchrone : jusqu’à 90 s de travail et un budget de nettoyage de 10 s par défaut, plus une marge réseau. Pour plusieurs scripts, utilisez les jobs asynchrones ci-dessous.
 
 ## GET /health
 
@@ -157,6 +159,36 @@ Plafonds : **256 Kio** sérialisés, **200 observations par catégorie par défa
 Les résultats sont triés par confiance décroissante puis identifiant stable, et les catégories sont remplies par tours. Une perte rend la réponse et la couverture concernée `partial`, avec `truncation.truncated: true` et un motif : `response_bytes`, `finding_count`, `evidence_count`, `artifact_bytes`, `module_count` ou `field_bytes`.
 
 Il n’y a pas de pagination des observations omises. La réponse ne contient ni code source, ni contexte brut, ni valeur originale de secret.
+
+## Jobs asynchrones
+
+| Route | Réponse |
+| --- | --- |
+| `POST /jobs` | `202` avec l’état initial et l’en-tête `Location: /jobs/:id` |
+| `GET /jobs/:id` | État du lot et de chaque script, sans code ni observations |
+| `GET /jobs/:id/items/:index` | Réponse `AnalyzeResponse` d’un script dès sa publication |
+| `DELETE /jobs/:id` | Annulation des traitements restants ; les résultats publiés sont conservés |
+
+Le corps de soumission contient `items`, de 1 à 50 objets au format de `POST /analyze`, et éventuellement `budget_ms`. Chaque script conserve ses propres options et son propre handle ; l’index correspond à sa position dans `items`, à partir de zéro. La limite du corps HTTP s’applique au lot entier. Les options et contenus sont validés avant acceptation ; une erreur d’acquisition ou de traitement reste ensuite propre au script concerné.
+
+`budget_ms` vaut 90 000 par défaut (ou le plafond serveur s’il est inférieur). Il est borné par `jobs.max_budget_ms`, 300 000 par défaut. Le délai commence à l’acceptation, **attente dans la file comprise**. Une analyse reçoit au plus le temps restant et son plafond `analysis_ms`. Le nettoyage peut se poursuivre après l’échéance ; un état terminal n’est publié qu’après retour des analyses actives.
+
+L’état du job contient `id`, `status`, `created_at`, `deadline_at`, `expires_at` et `items`. Chaque item expose `index`, `status`, `handle` et `error_code` (les deux derniers peuvent être `null`).
+
+| État d’un script | Signification |
+| --- | --- |
+| `queued`, `running` | En attente ou en cours |
+| `complete`, `partial`, `failed` | Statut de l’analyse publiée ; les détails sont dans son résultat |
+| `failed` sans handle | Aucun résultat publié ; `error_code` indique la cause |
+| `skipped` | Non démarré : délai, annulation, arrêt ou indisponibilité du service |
+
+Le job passe de `queued` à `running`, puis à `completed` ou `timed_out`. `completed` signifie que tous les items sont terminaux, **pas qu’ils ont tous réussi**. L’annulation passe par `cancelling`, puis `cancelled` après retour des analyses actives. Un nettoyage non confirmé reste visible dans `error_code` et rend le service indisponible. Un arrêt ou redémarrage classe les jobs inachevés en `interrupted` ; aucune relance automatique. La déconnexion HTTP du client n’annule pas le job.
+
+La lecture d’un résultat sans handle retourne `409 result_unavailable`, y compris pour un item définitivement ignoré. Un index absent retourne `404`. Les jobs expirés retournent `410` pendant 24 h, puis `404`. Les handles gardent leur propre durée de rétention : un résultat peut donc expirer avant le job. Les identifiants d’un autre projet retournent `404`.
+
+Une soumission refusée pour quota retourne `429 job_capacity` ; une autre soumission dont le corps est encore en réception peut donner `429 job_submission_capacity`. Un budget supérieur au plafond serveur donne `422 job_budget_exceeded`. Un `POST` répété crée un nouveau job : il n’y a pas de clé d’idempotence.
+
+Les [exemples](/guides/analysis/#soumettre-un-lot) montrent la soumission, le suivi et la lecture progressive.
 
 ## GET /source/:handle
 

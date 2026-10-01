@@ -34,7 +34,9 @@ Les modules ne sont importés qu’après contrôle de l’encodage, du chemin e
 
 ## Admission et budgets
 
-Une seule analyse est admise, avant lecture du corps HTTP ; les autres reçoivent `429` avec `Retry-After: 1`. Les workers et modules sont traités séquentiellement.
+`POST /analyze` réserve une place avant lecture du corps HTTP ; à saturation, il retourne `429` avec `Retry-After: 1`. Les jobs partagent cette capacité et attendent dans une file SQLite bornée. Le prochain job servi est celui qui a été servi le moins récemment ; les scripts d’un même job démarrent dans l’ordre soumis. La file ne garantit pas l’équité entre projets face à des appels synchrones continus.
+
+Plusieurs scripts peuvent être analysés simultanément selon les plafonds d’analyses, de workers et de mémoire. Les outils d’un script restent séquentiels. Chaque analyse réserve aussi sa capacité de stockage ; le cache ne peut pas emprunter les réservations des analyses en cours. La récupération des conteneurs abandonnés est partagée et terminée avant le lancement du premier worker.
 
 Le budget d’un extracteur couvre tous ses modules. Le délai global restant prévaut sur les budgets locaux, nettoyage des invocations compris. Un timeout ou une erreur laisse les autres outils poursuivre dans le temps disponible. Les [statuts](/reference/api/#statuts-et-couverture) signalent la couverture obtenue ; les [plafonds](/reference/configuration/#budgets) se configurent côté serveur.
 

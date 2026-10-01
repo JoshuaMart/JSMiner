@@ -68,7 +68,7 @@ Le cache n’ajoute pas de capacité à `budgets.storage_bytes`. Avec `enabled: 
 
 ## Budgets
 
-Les valeurs sont des entiers positifs. Sauf pour `finding_count` et `worker_memory_bytes`, le défaut est aussi le maximum autorisé. Contraintes : `source_read_bytes ≥ 4`, `script_bytes ≤ http_body_bytes`, `artifact_bytes ≤ storage_bytes`. Un Kio vaut 1 024 octets, un Mio 1 048 576 octets.
+Les valeurs sont des entiers positifs. Les maximums différents du défaut sont indiqués dans le tableau. Contraintes : `source_read_bytes ≥ 4`, `script_bytes ≤ http_body_bytes`, `artifact_bytes ≤ storage_bytes`. Un Kio vaut 1 024 octets, un Mio 1 048 576 octets.
 
 | Clé de `budgets` | Défaut (maximum si différent) | Effet |
 | --- | ---: | --- |
@@ -85,8 +85,9 @@ Les valeurs sont des entiers positifs. Sauf pour `finding_count` et `worker_memo
 | `module_count` | `2000` | Modules conservés par analyse |
 | `response_bytes` | `262144` | JSON d’analyse sérialisé |
 | `source_read_bytes` | `65536` | Octets source par lecture |
-| `active_analyses` | `1` | Analyses admises simultanément |
-| `active_workers` | `2` | Plafond déclaré ; exécution actuellement séquentielle |
+| `active_analyses` | `1` (max. `8`) | Analyses admises simultanément, requêtes synchrones et jobs confondus |
+| `active_workers` | `2` (max. `8`) | Plafond global de workers, nettoyage compris |
+| `total_worker_memory_bytes` | `4294967296` (max. `68719476736`) | Enveloppe de mémoire réservée aux workers simultanés |
 | `storage_bytes` | `1073741824` | Quota logique global, sources et cache compris |
 | `retention_ms` | `86400000` | Durée de vie fixe des handles après publication |
 
@@ -103,7 +104,7 @@ Délais dans `budgets.tool_ms` :
 | `domains` | `3000` ms |
 
 
-Le budget d’un extracteur couvre le lot de modules absents du cache, dans un seul conteneur ; le délai global prévaut. `active_workers: 2` n’active pas de parallélisme : l’exécution reste séquentielle.
+Le budget d’un extracteur couvre le lot de modules absents du cache, dans un seul conteneur ; le délai global prévaut. Les outils d’un même script restent séquentiels.
 
 Le tas JavaScript des workers Node est réglé à environ 70 % du budget du conteneur, avec une réserve pour les autres allocations et `/tmp`. Un épuisement mémoire identifié produit `memory_limit` ; augmenter le budget ne garantit pas qu’un script complexe terminera dans le délai.
 
@@ -123,3 +124,33 @@ Ajoutez uniquement les valeurs à changer :
 ```
 
 Les champs omis gardent leurs défauts. Le [guide d’exploitation](/guides/operations/) traite l’espace physique, la purge et les sauvegardes.
+
+## Concurrence
+
+La capacité effective est `min(active_analyses, active_workers, floor(total_worker_memory_bytes / worker_memory_bytes))`. Une place reste réservée jusqu’au nettoyage ; captures et accès au cache occupent aussi leur place. Par défaut, une analyse tourne à la fois. Pour en autoriser deux :
+
+```json
+{
+  "budgets": {
+    "active_analyses": 2,
+    "active_workers": 2,
+    "worker_memory_bytes": 2147483648,
+    "total_worker_memory_bytes": 4294967296
+  }
+}
+```
+
+Les 4 Gio de cet exemple couvrent les conteneurs, **pas** l’API, Docker, le cache système ou les autres applications. Dimensionnez la mémoire de l’hôte ou de la VM Docker en conséquence. JSMiner réserve les plafonds configurés ; il ne mesure pas la mémoire libre de Docker pour augmenter automatiquement sa capacité. `total_worker_memory_bytes` doit être au moins égal à `worker_memory_bytes`.
+
+## File de jobs
+
+| Clé dans `jobs` | Défaut | Maximum |
+| --- | ---: | ---: |
+| `max_jobs` | `128` | `10000` |
+| `max_bytes` | `134217728` (128 Mio) | 1 Gio |
+| `retention_ms` | `86400000` (24 h) | 7 jours |
+| `max_budget_ms` | `300000` (5 min) | 1 heure |
+
+`max_jobs` compte les jobs non expirés, y compris ceux terminés. `max_bytes` borne les entrées en attente et une réservation de métadonnées (8 Kio par job, 512 octets par item). Ce quota SQLite est distinct de `storage_bytes` ; il ne représente pas l’espace physique exact du journal WAL. Les contenus sont retirés de la file lorsqu’ils démarrent ou deviennent terminaux. Une seule soumission de lot peut recevoir son corps HTTP à la fois.
+
+La rétention part de l’acceptation et doit couvrir `max_budget_ms + cleanup_ms`. Les jobs et résultats terminés restent consultables après redémarrage ; le travail inachevé est marqué `interrupted`, sans reprise automatique. Le mode `:memory:` ne conserve rien après arrêt.

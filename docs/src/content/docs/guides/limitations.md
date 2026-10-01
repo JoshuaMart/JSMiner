@@ -20,7 +20,7 @@ Les huit profils obtiennent les mêmes comptes sur ce corpus. Un préfixe d’en
 
 ## Déploiement
 
-- Une analyse et un worker à la fois, sans file persistante ni reprise de job. Les extracteurs traitent les modules par lot dans un conteneur ; un lot complexe peut encore dépasser son budget.
+- Jobs asynchrones bornés à 50 scripts, file locale persistante et concurrence configurable. Pas de reprise automatique du travail interrompu, de clé d’idempotence ni d’équité stricte entre projets. Un lot complexe peut encore dépasser son budget.
 - Stockage local exclusif ; pas de partage entre serveurs ni de suppression administrative des handles actifs.
 - Capture des URL publiques par défaut, sans redirection ni session navigateur ; restrictions réseau communes à tous les projets.
 - Jetons lus au démarrage, sans API d’administration. Un accès distant nécessite un proxy TLS privé.
@@ -36,8 +36,8 @@ Les huit profils obtiennent les mêmes comptes sur ce corpus. Un préfixe d’en
 | Imports HAR/Burp | Conversion des captures existantes vers `content` |
 | Comparaison de bundles | Distinguer changements de code et changements d’outils |
 | Pagination des observations | Inventaire étendu sans agrandir les réponses |
-| Jobs asynchrones et lots | Admission, persistance, reprise et annulation |
-| Parallélisme | Mesurer mémoire et bénéfice, préserver le nettoyage |
+| Reprise de jobs | Idempotence et reprise explicite des items interrompus |
+| Dimensionnement | Mesures sur corpus représentatif, équité entre projets et charge soutenue |
 | Revalidation HTTP | Cache d’acquisition séparé du cache des traitements |
 | Packaging d’exploitation | Déploiement du superviseur, de Docker et du stockage |
 

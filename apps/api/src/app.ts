@@ -8,16 +8,18 @@ import type {
 } from '@jsminer/contracts';
 import { schema, validateContract } from '@jsminer/contracts';
 import Fastify from 'fastify';
-import { AnalysisEngine, type EngineOptions } from './analysis.ts';
+import { type Admission, AnalysisEngine, type EngineOptions } from './analysis.ts';
 import type { Principal } from './auth.ts';
 import { createAuthenticator } from './auth.ts';
 import { parseConfig } from './config.ts';
 import { ServiceError } from './errors.ts';
+import { JobQueue } from './jobs.ts';
 import { openMetadataStore } from './storage.ts';
 
 declare module 'fastify' {
   interface FastifyRequest {
     principal: Principal | null;
+    analysisAdmission: Admission | null;
     releaseAdmission: (() => void) | null;
   }
   interface FastifyContextConfig {
@@ -35,6 +37,14 @@ export function buildApp(configuration: unknown, options: EngineOptions = {}) {
     storage.close();
     throw error;
   }
+  let jobs: JobQueue;
+  try {
+    jobs = new JobQueue(storage.database, engine, config, options.now);
+  } catch (error) {
+    void engine.close().finally(() => storage.close());
+    throw error;
+  }
+  let jobSubmission = false;
   const app = Fastify({
     logger: false,
     bodyLimit: config.budgets.http_body_bytes,
@@ -67,11 +77,19 @@ export function buildApp(configuration: unknown, options: EngineOptions = {}) {
     error: { code, message, request_id: id },
   });
   app.decorateRequest('principal', null);
+  app.decorateRequest('analysisAdmission', null);
   app.decorateRequest('releaseAdmission', null);
-  app.addHook('preClose', async () => engine.abort());
+  app.addHook('preClose', async () => {
+    jobs.abort();
+    engine.abort();
+  });
   app.addHook('onClose', async () => {
     try {
-      await engine.close();
+      try {
+        await jobs.close();
+      } finally {
+        await engine.close();
+      }
     } finally {
       storage.close();
     }
@@ -106,8 +124,26 @@ export function buildApp(configuration: unknown, options: EngineOptions = {}) {
       return reply
         .code(415)
         .send(errorBody(request.id, 'unsupported_media_type', 'Un corps JSON est requis.'));
-    if (request.method === 'POST' && request.routeOptions.url === '/analyze') {
-      const release = engine.reserve();
+    if (
+      request.method === 'POST' &&
+      ['/analyze', '/jobs'].includes(request.routeOptions.url ?? '')
+    ) {
+      let release: () => void;
+      if (request.routeOptions.url === '/analyze') {
+        const admission = engine.reserve();
+        request.analysisAdmission = admission;
+        release = admission;
+      } else {
+        if (jobSubmission) throw new ServiceError(429, 'job_submission_capacity');
+        jobSubmission = true;
+        let released = false;
+        release = () => {
+          if (!released) {
+            released = true;
+            jobSubmission = false;
+          }
+        };
+      }
       request.releaseAdmission = () => {
         release();
         request.raw.removeListener('aborted', onClose);
@@ -161,7 +197,7 @@ export function buildApp(configuration: unknown, options: EngineOptions = {}) {
   );
 
   app.get('/health', { config: { permissions: ['analysis:read'] } }, async (request, reply) => {
-    if (!storage.isReady() || !engine.healthy)
+    if (!storage.isReady() || !engine.healthy || !jobs.healthy)
       return reply
         .code(503)
         .send(errorBody(request.id, 'storage_unavailable', 'Stockage indisponible.'));
@@ -195,11 +231,51 @@ export function buildApp(configuration: unknown, options: EngineOptions = {}) {
           request.principal?.projectId ?? '',
           result.value,
           controller.signal,
+          undefined,
+          request.analysisAdmission ?? undefined,
         );
       } finally {
         request.raw.removeListener('aborted', abort);
         reply.raw.removeListener('close', abort);
       }
+    },
+  );
+
+  app.post(
+    '/jobs',
+    { config: { permissions: ['analysis:write', 'analysis:read'] } },
+    async (request, reply) => {
+      const checked = validateContract('JobRequest', request.body);
+      if (!checked.ok) throw new ServiceError(checked.status, checked.code);
+      const job = jobs.create(request.principal?.projectId ?? '', checked.value);
+      return reply.code(202).header('Location', `/jobs/${job.id}`).send(job);
+    },
+  );
+  app.get('/jobs/:id', { config: { permissions: ['analysis:read'] } }, async (request) => {
+    const checked = validateContract('JobParams', request.params);
+    if (!checked.ok) throw new ServiceError(checked.status, checked.code);
+    return jobs.get(request.principal?.projectId ?? '', checked.value.id);
+  });
+  app.delete(
+    '/jobs/:id',
+    { config: { permissions: ['analysis:write', 'analysis:read'] } },
+    async (request) => {
+      const checked = validateContract('JobParams', request.params);
+      if (!checked.ok) throw new ServiceError(checked.status, checked.code);
+      return jobs.cancel(request.principal?.projectId ?? '', checked.value.id);
+    },
+  );
+  app.get(
+    '/jobs/:id/items/:index',
+    { config: { permissions: ['analysis:read'] } },
+    async (request) => {
+      const checked = validateContract('JobItemParams', request.params);
+      if (!checked.ok) throw new ServiceError(checked.status, checked.code);
+      return jobs.result(
+        request.principal?.projectId ?? '',
+        checked.value.id,
+        Number(checked.value.index),
+      );
     },
   );
 

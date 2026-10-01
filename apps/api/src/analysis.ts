@@ -30,16 +30,16 @@ export interface EngineOptions {
   workers?: Partial<Record<ToolName, Worker>>;
   now?: () => number;
 }
+export type Admission = (() => void) & { claim(): () => void };
 export class AnalysisEngine {
   readonly store: ArtifactStore;
   private readonly workers: Partial<Record<ToolName, Worker>>;
   private readonly now: () => number;
-  private recovered = false;
+  private recovery: Promise<void> | undefined;
   private blocked = false;
   private closing = false;
-  private controller: AbortController | undefined;
-  private active: Promise<AnalyzeResponse> | undefined;
-  private admitted = false;
+  private readonly active = new Map<AbortController, Promise<AnalyzeResponse>>();
+  private admitted = 0;
   private readonly purgeTimer: ReturnType<typeof setInterval>;
   constructor(
     private readonly config: ServiceConfig,
@@ -82,51 +82,93 @@ export class AnalysisEngine {
         try {
           this.store.purge();
         } catch {
-          this.blocked = true;
+          this.block();
         }
       },
       Math.min(config.budgets.retention_ms, config.cache.retention_ms, 60000),
     );
     this.purgeTimer.unref();
   }
+  private block() {
+    this.blocked = true;
+    for (const controller of this.active.keys()) controller.abort();
+  }
   get healthy() {
     return !this.blocked && !this.closing && Object.values(this.workers).every((w) => w.healthy);
+  }
+  get capacity() {
+    const b = this.config.budgets;
+    return Math.min(
+      b.active_analyses,
+      b.active_workers,
+      Math.floor(b.total_worker_memory_bytes / b.worker_memory_bytes),
+    );
+  }
+  get available() {
+    return this.healthy ? this.capacity - this.admitted : 0;
   }
   /** Reserve before HTTP body parsing; active also covers disconnect cleanup. */
   reserve() {
     if (!this.healthy) throw new ServiceError(503, 'service_unavailable');
-    if (this.admitted || this.active) throw new ServiceError(429, 'analysis_capacity');
-    this.admitted = true;
-    let released = false;
-    return () => {
-      if (released) return;
-      released = true;
-      this.admitted = false;
+    if (this.admitted >= this.capacity) throw new ServiceError(429, 'analysis_capacity');
+    this.admitted++;
+    let held = true,
+      running = false,
+      requested = false;
+    const free = () => {
+      if (held) {
+        held = false;
+        this.admitted--;
+      }
     };
+    const release = () => {
+      requested = true;
+      if (!running) free();
+    };
+    return Object.assign(release, {
+      claim: () => {
+        if (!held || running) throw new ServiceError(503, 'analysis_cancelled');
+        running = true;
+        return () => {
+          running = false;
+          if (requested) free();
+        };
+      },
+    });
   }
-  analyze(project: string, request: AnalyzeRequest, signal: AbortSignal): Promise<AnalyzeResponse> {
+
+  analyze(
+    project: string,
+    request: AnalyzeRequest,
+    signal: AbortSignal,
+    timeoutMs = this.config.budgets.analysis_ms,
+    admission?: Admission,
+  ): Promise<AnalyzeResponse> {
     if (!this.healthy) throw new ServiceError(503, 'service_unavailable');
-    if (this.active) throw new ServiceError(429, 'analysis_capacity');
-    this.controller = new AbortController();
-    const controller = this.controller;
+    const release = admission ?? this.reserve();
+    const finished = release.claim();
+    const controller = new AbortController();
     const abort = () => controller.abort();
     signal.addEventListener('abort', abort, { once: true });
     if (signal.aborted) abort();
-    this.active = this.execute(project, request, controller.signal).finally(() => {
+    const active = this.execute(project, request, controller.signal, timeoutMs).finally(() => {
       signal.removeEventListener('abort', abort);
-      this.controller = undefined;
-      this.active = undefined;
+      this.active.delete(controller);
+      finished();
+      if (!admission) release();
     });
-    return this.active;
+    this.active.set(controller, active);
+    return active;
   }
   private async execute(
     project: string,
     request: AnalyzeRequest,
     signal: AbortSignal,
+    timeoutMs: number,
   ): Promise<AnalyzeResponse> {
     let pending: Pending | undefined;
     const budget = this.config.budgets;
-    const deadline = performance.now() + budget.analysis_ms;
+    const deadline = performance.now() + Math.min(budget.analysis_ms, timeoutMs);
     const names = selectedTools(request);
     try {
       const bytes =
@@ -143,11 +185,12 @@ export class AnalysisEngine {
       if (request.script_hash && request.script_hash !== sha256(bytes))
         throw new ServiceError(409, 'script_hash_mismatch');
       const docker = names.map((name) => this.workers[name]).find((w) => w instanceof DockerWorker);
-      if (docker instanceof DockerWorker && !this.recovered) {
-        await docker.recover(budget.cleanup_ms);
-        this.recovered = true;
+      if (docker instanceof DockerWorker) {
+        this.recovery ??= docker.recover(budget.cleanup_ms);
+        await this.recovery;
       }
       if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
+      if (!this.healthy) throw new ServiceError(503, 'service_unavailable');
       pending = this.store.prepare(project, bytes);
       const tools = names.map(
         (name): ToolRun => ({
@@ -214,6 +257,7 @@ export class AnalysisEngine {
         index = 0,
       ): Promise<StepResult> => {
         if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
+        if (!this.healthy) throw new ServiceError(503, 'service_unavailable');
         const timeout = Math.min(end, deadline) - performance.now();
         if (timeout <= 0)
           return {
@@ -263,6 +307,7 @@ export class AnalysisEngine {
             : undefined;
           const cached = cacheKey ? this.store.cached(cacheKey) : null;
           if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
+          if (!this.healthy) throw new ServiceError(503, 'service_unavailable');
           if (performance.now() >= Math.min(end, deadline))
             return {
               status: 'skipped',
@@ -323,7 +368,7 @@ export class AnalysisEngine {
       };
       const remember = (result: StepResult) => {
         if (result.cacheKey && !result.cacheHit && result.version)
-          this.store.cacheStep(result.cacheKey, result.output, result.version, current);
+          this.store.cacheStep(result.cacheKey, result.output, result.version);
       };
       const envelope = (content: Buffer, name: ToolName) =>
         Buffer.from(
@@ -424,6 +469,7 @@ export class AnalysisEngine {
             const started = performance.now();
             try {
               if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
+              if (!this.healthy) throw new ServiceError(503, 'service_unavailable');
               const remaining = Math.min(end, deadline) - performance.now();
               if (remaining <= 0) {
                 terminal = {
@@ -472,6 +518,7 @@ export class AnalysisEngine {
         }
         for (const [index, source] of current.sources.entries()) {
           if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
+          if (!this.healthy) throw new ServiceError(503, 'service_unavailable');
           const result =
             scheduled?.[index] ??
             (await run(
@@ -613,6 +660,7 @@ export class AnalysisEngine {
       );
       response.endpoints = response.endpoints.filter(keepEndpoint);
       if (signal.aborted) throw new ServiceError(503, 'analysis_cancelled');
+      if (!this.healthy) throw new ServiceError(503, 'service_unavailable');
       if (performance.now() >= deadline) {
         const last = (
           ['domains', 'graphql', 'trufflehog', 'jsluice', 'wakaru', 'webcrack'] as const
@@ -640,13 +688,14 @@ export class AnalysisEngine {
       // Reject any internal inconsistency before making the handle visible.
       if (!validateContract('AnalyzeResponse', response).ok)
         throw new ServiceError(500, 'invalid_result');
+      if (signal.aborted || !this.healthy) throw new ServiceError(503, 'analysis_cancelled');
       this.store.publish(pending, response);
       return response;
     } catch (error) {
       if (error instanceof ServiceError && error.code === 'storage_cleanup_unconfirmed')
-        this.blocked = true;
+        this.block();
       if (error instanceof CleanupError) {
-        this.blocked = true;
+        this.block();
         throw new ServiceError(
           503,
           'worker_cleanup_unconfirmed',
@@ -662,7 +711,7 @@ export class AnalysisEngine {
     try {
       this.store.discard(pending);
     } catch {
-      this.blocked = true;
+      this.block();
       throw new ServiceError(503, 'storage_cleanup_unconfirmed');
     }
   }
@@ -709,12 +758,12 @@ export class AnalysisEngine {
   }
   abort() {
     this.closing = true;
-    this.controller?.abort();
+    for (const controller of this.active.keys()) controller.abort();
   }
   async close() {
     this.abort();
     clearInterval(this.purgeTimer);
-    await this.active?.catch(() => {});
+    await Promise.allSettled(this.active.values());
     this.store.close();
   }
 }

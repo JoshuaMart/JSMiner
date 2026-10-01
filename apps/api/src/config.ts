@@ -15,6 +15,7 @@ export interface ServiceConfig {
     origins: { origin: string; allow_private: boolean }[];
     wire_bytes: number;
   };
+  jobs: { max_jobs: number; max_bytes: number; retention_ms: number; max_budget_ms: number };
   cache: { enabled: boolean; retention_ms: number; max_bytes: number };
   tokens: { sha256: string; project_id: string; permissions: Permission[] }[];
   budgets: {
@@ -24,6 +25,7 @@ export interface ServiceConfig {
     analysis_ms: number;
     cleanup_ms: number;
     worker_memory_bytes: number;
+    total_worker_memory_bytes: number;
     finding_count: number;
     worker_cpus: number;
     worker_pids: number;
@@ -59,7 +61,9 @@ export function parseConfig(value: unknown, baseDirectory = process.cwd()): Serv
   if (
     copy.budgets.script_bytes > copy.budgets.http_body_bytes ||
     copy.budgets.artifact_bytes > copy.budgets.storage_bytes ||
-    copy.budgets.source_read_bytes < 4
+    copy.budgets.source_read_bytes < 4 ||
+    copy.budgets.total_worker_memory_bytes < copy.budgets.worker_memory_bytes ||
+    copy.jobs.retention_ms < copy.jobs.max_budget_ms + copy.budgets.cleanup_ms
   )
     throw new Error('Inconsistent resource budgets.');
   const origins = new Set<string>();

@@ -50,6 +50,12 @@ export class ArtifactStore {
   private readonly key: Buffer;
   private readonly lease: DatabaseSync;
   private closed = false;
+  private readonly reservations = new Map<string, number>();
+  private reservedBytes(except?: string) {
+    let total = 0;
+    for (const [handle, bytes] of this.reservations) if (handle !== except) total += bytes;
+    return total;
+  }
   constructor(
     private readonly db: DatabaseSync,
     private readonly config: ServiceConfig,
@@ -194,17 +200,17 @@ export class ArtifactStore {
       return null;
     }
   }
-  cacheStep(key: string, output: Buffer, version: string, pending: Pending) {
+  cacheStep(key: string, output: Buffer, version: string) {
     if (
       !this.config.cache.enabled ||
       this.db.prepare('SELECT 1 FROM step_cache WHERE key=?').get(key)
     )
       return;
     const bytes = output.length + 8192;
-    // The active handle owns this reservation until publication. Cache never borrows it.
+    // Every active handle owns its reservation until publication; cache cannot borrow them.
     const limit = Math.min(
       this.config.cache.max_bytes,
-      this.config.budgets.storage_bytes - this.handleBytes() - pending.capacity - 8192,
+      this.config.budgets.storage_bytes - this.handleBytes() - this.reservedBytes(),
     );
     if (bytes > limit) return;
     this.trimCache(limit - bytes);
@@ -250,7 +256,7 @@ export class ArtifactStore {
       this.config.cache.enabled
         ? Math.min(
             this.config.cache.max_bytes,
-            this.config.budgets.storage_bytes - this.handleBytes(),
+            this.config.budgets.storage_bytes - this.handleBytes() - this.reservedBytes(),
           )
         : 0,
     );
@@ -259,7 +265,7 @@ export class ArtifactStore {
     this.purge();
     if (bytes.length > this.config.budgets.artifact_bytes)
       throw new ServiceError(413, 'artifact_too_large');
-    const used = this.handleBytes();
+    const used = this.handleBytes() + this.reservedBytes();
     // Include the original manifest as well as the index/storage overhead.
     const reserved = bytes.length + this.config.budgets.response_bytes + 8192 + 1024;
     if (used + reserved > this.config.budgets.storage_bytes)
@@ -288,6 +294,7 @@ export class ArtifactStore {
       lines,
       hash: sha256(bytes),
     };
+    this.reservations.set(handle, capacity + 8192);
     return {
       handle,
       directory,
@@ -354,7 +361,11 @@ export class ArtifactStore {
     }
   }
   discard(pending: Pending) {
-    rmSync(pending.directory, { recursive: true, force: true });
+    try {
+      rmSync(pending.directory, { recursive: true, force: true });
+    } finally {
+      this.reservations.delete(pending.handle);
+    }
   }
   publish(pending: Pending, response: AnalyzeResponse) {
     const manifest = pending.sources.map((s) => s.module);
@@ -368,7 +379,7 @@ export class ArtifactStore {
       Buffer.byteLength(serialized) +
       Buffer.byteLength(JSON.stringify(manifest)) +
       8192;
-    const used = this.handleBytes();
+    const used = this.handleBytes() + this.reservedBytes(pending.handle);
     this.trimCache(this.config.budgets.storage_bytes - used - total);
     if (used + total > this.config.budgets.storage_bytes)
       throw new ServiceError(429, 'storage_full');
@@ -418,6 +429,27 @@ export class ArtifactStore {
     if (new Set(paths).size !== paths.length) throw new ServiceError(500, 'invalid_artifact');
     (modules as Module[]).sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
     return { row, modules: modules as Module[] };
+  }
+  result(project: string, handle: string): AnalyzeResponse {
+    this.lookup(project, handle);
+    try {
+      for (const directory of [join(this.root, 'objects'), join(this.root, 'objects', handle)]) {
+        const stat = lstatSync(directory);
+        if (!stat.isDirectory() || stat.isSymbolicLink())
+          throw new Error('Invalid artifact directory.');
+      }
+      const result: unknown = JSON.parse(
+        this.readPrivate(
+          join(this.root, 'objects', handle, 'result.json'),
+          this.config.budgets.response_bytes,
+        ).toString(),
+      );
+      const checked = validateContract('AnalyzeResponse', result);
+      if (!checked.ok || checked.value.handle !== handle) throw new Error('Invalid result.');
+      return checked.value;
+    } catch {
+      throw new ServiceError(500, 'invalid_artifact');
+    }
   }
   list(project: string, handle: string, limit = 50, cursor?: string): ManifestResponse {
     const { row, modules } = this.lookup(project, handle);

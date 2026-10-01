@@ -91,6 +91,52 @@ The host API port is **3001**; the container listens on **3000**. Configuration,
 
 </details>
 
+## Batch jobs
+
+Submit up to 50 scripts and read each result as soon as it is available. The single-script `/analyze` route remains synchronous.
+
+<details>
+<summary><strong>Submit, poll and read results</strong></summary>
+
+```sh
+curl --fail-with-body http://127.0.0.1:3001/jobs \
+  -H "Authorization: Bearer $JSMINER_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --data '{"budget_ms":30000,"items":[{"content":"const x=1;","tools":["jsluice"]},{"content":"const y=2;","tools":["graphql"]}]}'
+
+JSMINER_JOB='replace with the returned id'
+curl --fail-with-body "http://127.0.0.1:3001/jobs/$JSMINER_JOB" \
+  -H "Authorization: Bearer $JSMINER_TOKEN"
+
+# Read item 0 once its status includes a handle.
+curl --fail-with-body "http://127.0.0.1:3001/jobs/$JSMINER_JOB/items/0" \
+  -H "Authorization: Bearer $JSMINER_TOKEN"
+```
+
+Submission returns `202` and a `Location` header. Each item accepts the same `url` or `content` and options as `/analyze`. The job budget includes queue time; cleanup can continue past the deadline. `DELETE /jobs/:id` cancels remaining work while preserving published results. HTTP disconnection does not cancel a job. Interrupted jobs are recorded after restart and are not automatically replayed.
+
+</details>
+
+<details>
+<summary><strong>Enable two simultaneous analyses</strong></summary>
+
+Add these values to your server configuration, then restart the API:
+
+```json
+{
+  "budgets": {
+    "active_analyses": 2,
+    "active_workers": 2,
+    "worker_memory_bytes": 2147483648,
+    "total_worker_memory_bytes": 4294967296
+  }
+}
+```
+
+The default is one analysis at a time. Both synchronous requests and jobs share the configured capacity. The example reserves up to 4 GiB for workers; allow additional memory for the API, Docker and the host. Queue limits and retention are documented in [server configuration](docs/src/content/docs/reference/configuration.md).
+
+</details>
+
 ## Documentation
 
 The documentation is currently in French:

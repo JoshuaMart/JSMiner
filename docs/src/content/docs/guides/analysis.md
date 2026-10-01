@@ -83,6 +83,41 @@ curl --fail-with-body "$JSMINER_URL/analyze" \
   --data '{"content":"fetch(\"https://api.example.com/v1\");","tools":["domains"],"reference_domains":["example.com"]}'
 ```
 
+## Soumettre un lot
+
+Chaque entrée reprend les options d’une analyse. Cet exemple analyse deux contenus locaux, avec un budget de 30 s pour l’ensemble :
+
+```sh
+curl --fail-with-body "$JSMINER_URL/jobs" \
+  -H "Authorization: Bearer $JSMINER_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --data '{"budget_ms":30000,"items":[{"content":"const x=1;","tools":["jsluice"]},{"content":"const y=2;","tools":["graphql"]}]}'
+```
+
+Copiez l’`id` de la réponse `202`. Consultez l’état à intervalles raisonnables, par exemple une fois par seconde :
+
+```sh
+JSMINER_JOB='remplacer par id'
+curl --fail-with-body "$JSMINER_URL/jobs/$JSMINER_JOB" \
+  -H "Authorization: Bearer $JSMINER_TOKEN"
+```
+
+Dès que l’item d’index `0` a un `handle`, son résultat peut être lu sans attendre le reste :
+
+```sh
+curl --fail-with-body "$JSMINER_URL/jobs/$JSMINER_JOB/items/0" \
+  -H "Authorization: Bearer $JSMINER_TOKEN"
+```
+
+Pour annuler les traitements restants tout en gardant les résultats déjà publiés :
+
+```sh
+curl --fail-with-body -X DELETE "$JSMINER_URL/jobs/$JSMINER_JOB" \
+  -H "Authorization: Bearer $JSMINER_TOKEN"
+```
+
+Les [états et délais](/reference/api/#jobs-asynchrones) distinguent une analyse partielle, un échec et un script non démarré. Le [réglage de concurrence](/reference/configuration/#concurrence) s’applique aussi à `POST /analyze`.
+
 ## Lister les modules
 
 Récupérez le handle de la première réponse, puis demandez son manifeste :

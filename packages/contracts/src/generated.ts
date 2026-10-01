@@ -10,7 +10,11 @@ export type JSMinerContract =
   | ManifestResponse
   | SourceResponse
   | ErrorResponse
-  | HealthResponse;
+  | HealthResponse
+  | JobRequest
+  | JobResponse
+  | JobParams
+  | JobItemParams;
 /**
  * Exactly one of url/content. content must also be well-formed Unicode and <= 10 MiB UTF-8 (runtime refinement). Explicit domains requires reference_domains.
  */
@@ -280,4 +284,37 @@ export interface ErrorResponse {
 export interface HealthResponse {
   status: "ok";
   storage: "ready";
+}
+export interface JobRequest {
+  /**
+   * @minItems 1
+   * @maxItems 50
+   */
+  items: [AnalyzeRequest, ...AnalyzeRequest[]];
+  budget_ms?: number;
+}
+export interface JobResponse {
+  id: Identifier;
+  status: "queued" | "running" | "cancelling" | "completed" | "timed_out" | "cancelled" | "interrupted";
+  created_at: string;
+  deadline_at: string;
+  expires_at: string;
+  /**
+   * @minItems 1
+   * @maxItems 50
+   */
+  items: [JobItem, ...JobItem[]];
+}
+export interface JobItem {
+  index: number;
+  status: "queued" | "running" | "complete" | "partial" | "failed" | "skipped";
+  handle: Identifier | null;
+  error_code: string | null;
+}
+export interface JobParams {
+  id: Identifier;
+}
+export interface JobItemParams {
+  id: Identifier;
+  index: string;
 }
