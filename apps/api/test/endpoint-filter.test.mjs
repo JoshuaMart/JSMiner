@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { test } from 'node:test';
 import { JSLUICE_VERSION } from '@jsminer/adapters';
-import { validateContract } from '@jsminer/contracts';
+import { ajv, schema, validateContract } from '@jsminer/contracts';
 import { buildApp } from '../dist/app.js';
 import { normalize } from '../dist/normalization.js';
 import { endpointFilter } from '../dist/result-filters.js';
@@ -257,4 +257,44 @@ test('API filters cached extraction per request, preserving secrets and original
     },
   });
   assert.equal(invalid.statusCode, 400);
+});
+
+test('Resolved URLs are RFC 3986 URIs even when WHATWG keeps brackets in the path', () => {
+  const records = [
+    {
+      type: 'endpoint',
+      url: '[Content_Types].xml',
+      method: '',
+      kind: 'stringLiteral',
+      query_params: [],
+      body_params: [],
+    },
+    {
+      type: 'endpoint',
+      url: '/a|b?x={y}',
+      method: 'GET',
+      kind: 'fetch',
+      query_params: [],
+      body_params: [],
+    },
+    {
+      type: 'done',
+      version: JSLUICE_VERSION,
+      truncated: false,
+      secrets_truncated: false,
+      syntax_error: false,
+    },
+  ];
+  const result = normalize(
+    Buffer.from(records.map(JSON.stringify).join('\n')),
+    digest,
+    'https://[::1]:8443/q/',
+  );
+  const urls = result.endpoints.map((e) => e.resolved_url).sort();
+  assert.deepEqual(urls, [
+    'https://[::1]:8443/a%7Cb?x=%7By%7D',
+    'https://[::1]:8443/q/%5BContent_Types%5D.xml',
+  ]);
+  const httpUrl = ajv.getSchema(`${schema.$id}#/$defs/HttpUrl`);
+  for (const url of urls) assert.equal(httpUrl(url), true, url);
 });

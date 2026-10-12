@@ -1,4 +1,5 @@
 import type { AnalyzeResponse, Endpoint, Secret } from '@jsminer/contracts';
+import { uriHref } from './normalization.ts';
 export type Category = 'endpoints' | 'secrets' | 'gql_operations' | 'subdomains';
 type Observation = AnalyzeResponse[Category][number];
 function loss(response: AnalyzeResponse, reason: AnalyzeResponse['truncation']['reasons'][number]) {
@@ -88,7 +89,7 @@ export function finalize(
     if (e.resolved_url) {
       try {
         const url = new URL(e.resolved_url);
-        if (!['http:', 'https:'].includes(url.protocol)) e.resolved_url = null;
+        e.resolved_url = ['http:', 'https:'].includes(url.protocol) ? uriHref(url) : null;
       } catch {
         e.resolved_url = null;
       }

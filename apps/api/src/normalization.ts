@@ -60,6 +60,15 @@ const validate = new Ajv2020({ strict: false }).compile<RecordLine>({
 });
 
 /** Treat worker stdout as untrusted data; never publish its contexts or raw secret values. */
+/** WHATWG keeps `[ ] ^ | ` { }` in paths and queries; RFC 3986 (`format: uri`) does not. */
+export const uriHref = (url: URL) =>
+  url.href.replace(
+    /^([^:]+:\/\/[^/?#]*)(.*)$/s,
+    (_, authority: string, rest: string) =>
+      authority +
+      rest.replace(/[[\]^|`{}]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`),
+  );
+
 export function normalize(
   output: Buffer,
   mac: (value: string) => string,
@@ -174,7 +183,7 @@ export function normalize(
         absolute.password = '';
         absolute.hash = '';
         if (/^https?:/i.test(value) || hadCredentials) value = absolute.href;
-        if (!dynamic) resolved = absolute.href;
+        if (!dynamic) resolved = uriHref(absolute);
       } catch {
         // Protocol-relative credentials also need masking when no base URL is provided.
         value = value.replace(/^(\/\/)[^/@]+@/, '$1');
